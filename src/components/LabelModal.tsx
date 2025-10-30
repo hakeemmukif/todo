@@ -1,0 +1,134 @@
+import { useState, useEffect } from 'react';
+import { useTaskStore } from '../store/taskStore';
+import { DEFAULT_COLORS } from '../types/task';
+
+interface LabelModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  labelId?: string; // If provided, we're editing; otherwise, adding new
+}
+
+export const LabelModal = ({ isOpen, onClose, labelId }: LabelModalProps) => {
+  const { labels, addLabel, updateLabel } = useTaskStore();
+
+  const existingLabel = labelId ? labels.find((l) => l.id === labelId) : null;
+
+  const [name, setName] = useState('');
+  const [color, setColor] = useState(DEFAULT_COLORS[0]);
+  const [isFavorite, setIsFavorite] = useState(false);
+
+  // Load existing label data when editing
+  useEffect(() => {
+    if (existingLabel) {
+      setName(existingLabel.name);
+      setColor(existingLabel.color);
+      setIsFavorite(existingLabel.isFavorite);
+    } else {
+      // Reset for new label
+      setName('');
+      setColor(DEFAULT_COLORS[0]);
+      setIsFavorite(false);
+    }
+  }, [existingLabel, isOpen]);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!name.trim()) return;
+
+    if (labelId) {
+      // Edit existing
+      updateLabel(labelId, {
+        name: name.trim(),
+        color,
+        isFavorite,
+      });
+    } else {
+      // Add new
+      addLabel({
+        name: name.trim(),
+        color,
+        isFavorite,
+      });
+    }
+
+    onClose();
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
+      <div className="bg-minimal-bg border border-minimal-border w-full max-w-md p-6">
+        <h2 className="text-lg font-medium mb-6">
+          {labelId ? 'edit_label' : 'add_label'}
+        </h2>
+
+        <form onSubmit={handleSubmit}>
+          {/* Label Name */}
+          <div className="mb-4">
+            <label className="block text-xs opacity-60 mb-2">name</label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="label name"
+              className="w-full px-3 py-2 border border-minimal-border focus:outline-none focus:border-minimal-text bg-transparent text-sm"
+              autoFocus
+            />
+          </div>
+
+          {/* Color Picker */}
+          <div className="mb-4">
+            <label className="block text-xs opacity-60 mb-2">color</label>
+            <div className="flex flex-wrap gap-2">
+              {DEFAULT_COLORS.map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() => setColor(c)}
+                  className={`w-8 h-8 border-2 transition-all ${
+                    color === c ? 'border-minimal-text scale-110' : 'border-transparent'
+                  }`}
+                  style={{ backgroundColor: c }}
+                  title={c}
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* Favorite Toggle */}
+          <div className="mb-6">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={isFavorite}
+                onChange={(e) => setIsFavorite(e.target.checked)}
+                className="w-4 h-4"
+              />
+              <span className="text-sm">add to favorites</span>
+            </label>
+          </div>
+
+          {/* Actions */}
+          <div className="flex gap-2 justify-end">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 text-sm border border-minimal-border hover:bg-minimal-hover transition-colors"
+            >
+              cancel
+            </button>
+            <button
+              type="submit"
+              disabled={!name.trim()}
+              className="px-4 py-2 text-sm border border-minimal-border hover:bg-minimal-hover transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              {labelId ? 'save' : 'add'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
