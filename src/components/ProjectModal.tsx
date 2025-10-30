@@ -65,29 +65,29 @@ export const ProjectModal = ({ isOpen, onClose, projectId }: ProjectModalProps) 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
-      <div className="bg-minimal-bg border border-minimal-border w-full max-w-md p-6">
-        <h2 className="text-lg font-medium mb-6">
-          {projectId ? 'edit_project' : 'add_project'}
+    <div className="fixed inset-0 bg-black bg-opacity-30 dark:bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-minimal-bg dark:bg-[#1A1A1A] border border-minimal-border dark:border-[#2A2A2A] w-full max-w-md p-6">
+        <h2 className="text-lg font-medium mb-6 text-minimal-text dark:text-[#FAFAFA]">
+          {projectId ? 'Edit Project' : 'Add Project'}
         </h2>
 
         <form onSubmit={handleSubmit}>
           {/* Project Name */}
           <div className="mb-4">
-            <label className="block text-xs opacity-60 mb-2">name</label>
+            <label className="block text-xs opacity-60 mb-2 text-minimal-text dark:text-[#FAFAFA]">Name</label>
             <input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="project name"
-              className="w-full px-3 py-2 border border-minimal-border focus:outline-none focus:border-minimal-text bg-transparent text-sm"
+              placeholder="Project name"
+              className="w-full px-3 py-2 border border-minimal-border dark:border-[#2A2A2A] focus:outline-none focus:border-minimal-text dark:focus:border-[#FAFAFA] bg-transparent text-sm text-minimal-text dark:text-[#FAFAFA] placeholder:text-minimal-text placeholder:dark:text-[#FAFAFA] placeholder:opacity-40"
               autoFocus
             />
           </div>
 
           {/* Color Picker */}
           <div className="mb-4">
-            <label className="block text-xs opacity-60 mb-2">color</label>
+            <label className="block text-xs opacity-60 mb-2 text-minimal-text dark:text-[#FAFAFA]">Color</label>
             <div className="flex flex-wrap gap-2">
               {DEFAULT_COLORS.map((c) => (
                 <button
@@ -106,7 +106,7 @@ export const ProjectModal = ({ isOpen, onClose, projectId }: ProjectModalProps) 
 
           {/* Icon Picker */}
           <div className="mb-4">
-            <label className="block text-xs opacity-60 mb-2">icon</label>
+            <label className="block text-xs opacity-60 mb-2 text-minimal-text dark:text-[#FAFAFA]">Icon</label>
             <div className="flex flex-wrap gap-2">
               {PROJECT_ICONS.map((i) => (
                 <button
@@ -115,8 +115,8 @@ export const ProjectModal = ({ isOpen, onClose, projectId }: ProjectModalProps) 
                   onClick={() => setIcon(i)}
                   className={`w-10 h-10 border text-lg flex items-center justify-center transition-all ${
                     icon === i
-                      ? 'border-minimal-text bg-minimal-hover'
-                      : 'border-minimal-border hover:bg-minimal-hover'
+                      ? 'border-minimal-text dark:border-[#FAFAFA] bg-minimal-hover dark:bg-[#2A2A2A]'
+                      : 'border-minimal-border dark:border-[#2A2A2A] hover:bg-minimal-hover dark:hover:bg-[#2A2A2A]'
                   }`}
                   title={i}
                 >
@@ -135,7 +135,7 @@ export const ProjectModal = ({ isOpen, onClose, projectId }: ProjectModalProps) 
                 onChange={(e) => setIsFavorite(e.target.checked)}
                 className="w-4 h-4"
               />
-              <span className="text-sm">add to favorites</span>
+              <span className="text-sm text-minimal-text dark:text-[#FAFAFA]">Add to Favorites</span>
             </label>
           </div>
 
@@ -144,16 +144,16 @@ export const ProjectModal = ({ isOpen, onClose, projectId }: ProjectModalProps) 
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-sm border border-minimal-border hover:bg-minimal-hover transition-colors"
+              className="px-4 py-2 text-sm border border-minimal-border dark:border-[#2A2A2A] hover:bg-minimal-hover dark:hover:bg-[#2A2A2A] transition-colors text-minimal-text dark:text-[#FAFAFA]"
             >
-              cancel
+              Cancel
             </button>
             <button
               type="submit"
               disabled={!name.trim()}
-              className="px-4 py-2 text-sm border border-minimal-border hover:bg-minimal-hover transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              className="px-4 py-2 text-sm border border-minimal-border dark:border-[#2A2A2A] hover:bg-minimal-hover dark:hover:bg-[#2A2A2A] transition-colors disabled:opacity-40 disabled:cursor-not-allowed text-minimal-text dark:text-[#FAFAFA]"
             >
-              {projectId ? 'save' : 'add'}
+              {projectId ? 'Save' : 'Add'}
             </button>
           </div>
         </form>

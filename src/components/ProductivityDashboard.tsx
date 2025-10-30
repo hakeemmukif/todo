@@ -26,19 +26,19 @@ export const ProductivityDashboard = () => {
     <div className="space-y-8">
       {/* Karma & Level Progress */}
       <div className="border border-minimal-border p-6">
-        <h2 className="text-lg font-medium mb-4">karma & level</h2>
+        <h2 className="text-lg font-medium mb-4">Karma & Level</h2>
 
         <div className="space-y-4">
           {/* Current Level */}
           <div>
             <div className="flex items-center justify-between mb-2">
-              <span className="text-sm opacity-60">current level</span>
+              <span className="text-sm opacity-60">Current Level</span>
               <span className="text-sm font-medium">
                 {currentLevel?.title || 'Unknown'} (Level {karma.level})
               </span>
             </div>
             <div className="flex items-center justify-between mb-2">
-              <span className="text-sm opacity-60">total points</span>
+              <span className="text-sm opacity-60">Total Points</span>
               <span className="text-sm font-medium">{karma.totalPoints} pts</span>
             </div>
           </div>
@@ -47,7 +47,7 @@ export const ProductivityDashboard = () => {
           {nextLevel && (
             <div>
               <div className="flex items-center justify-between mb-2">
-                <span className="text-xs opacity-40">next level</span>
+                <span className="text-xs opacity-40">Next Level</span>
                 <span className="text-xs opacity-60">
                   {currentLevel!.pointsRequired}/{nextLevel.pointsRequired} pts
                 </span>
@@ -64,12 +64,12 @@ export const ProductivityDashboard = () => {
           {/* Streaks */}
           <div className="grid grid-cols-2 gap-4 pt-4 border-t border-minimal-border">
             <div>
-              <div className="text-xs opacity-40 mb-1">current streak</div>
+              <div className="text-xs opacity-40 mb-1">Current Streak</div>
               <div className="text-2xl font-medium">{karma.currentStreak}</div>
               <div className="text-xs opacity-40">days</div>
             </div>
             <div>
-              <div className="text-xs opacity-40 mb-1">longest streak</div>
+              <div className="text-xs opacity-40 mb-1">Longest Streak</div>
               <div className="text-2xl font-medium">{karma.longestStreak}</div>
               <div className="text-xs opacity-40">days</div>
             </div>
@@ -79,13 +79,13 @@ export const ProductivityDashboard = () => {
 
       {/* Productivity Stats */}
       <div className="border border-minimal-border p-6">
-        <h2 className="text-lg font-medium mb-4">productivity stats</h2>
+        <h2 className="text-lg font-medium mb-4">Productivity Stats</h2>
 
         <div className="space-y-4">
           {/* Completion Rate */}
           <div>
             <div className="flex items-center justify-between mb-2">
-              <span className="text-sm opacity-60">overall completion rate</span>
+              <span className="text-sm opacity-60">Overall Completion Rate</span>
               <span className="text-sm font-medium">{completionRate}%</span>
             </div>
             <div className="w-full h-2 bg-minimal-hover border border-minimal-border">
@@ -99,11 +99,11 @@ export const ProductivityDashboard = () => {
           {/* Task Count */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <div className="text-xs opacity-40 mb-1">total tasks</div>
+              <div className="text-xs opacity-40 mb-1">Total Tasks</div>
               <div className="text-xl font-medium">{totalTasks}</div>
             </div>
             <div>
-              <div className="text-xs opacity-40 mb-1">completed</div>
+              <div className="text-xs opacity-40 mb-1">Completed</div>
               <div className="text-xl font-medium">{completedTasks}</div>
             </div>
           </div>
@@ -111,15 +111,15 @@ export const ProductivityDashboard = () => {
           {/* Tasks by Period */}
           <div className="grid grid-cols-3 gap-4 pt-4 border-t border-minimal-border">
             <div>
-              <div className="text-xs opacity-40 mb-1">today</div>
+              <div className="text-xs opacity-40 mb-1">Today</div>
               <div className="text-lg font-medium">{stats.tasksCompletedToday}</div>
             </div>
             <div>
-              <div className="text-xs opacity-40 mb-1">this week</div>
+              <div className="text-xs opacity-40 mb-1">This Week</div>
               <div className="text-lg font-medium">{stats.tasksCompletedThisWeek}</div>
             </div>
             <div>
-              <div className="text-xs opacity-40 mb-1">this month</div>
+              <div className="text-xs opacity-40 mb-1">This Month</div>
               <div className="text-lg font-medium">{stats.tasksCompletedThisMonth}</div>
             </div>
           </div>
@@ -128,23 +128,23 @@ export const ProductivityDashboard = () => {
 
       {/* Active Tasks Breakdown */}
       <div className="border border-minimal-border p-6">
-        <h2 className="text-lg font-medium mb-4">active tasks by priority</h2>
+        <h2 className="text-lg font-medium mb-4">Active Tasks by Priority</h2>
 
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <span className="text-sm opacity-60">🔴 P1 (urgent)</span>
+            <span className="text-sm opacity-60">🔴 P1 (Urgent)</span>
             <span className="text-sm font-medium">{p1Tasks}</span>
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-sm opacity-60">🟠 P2 (high)</span>
+            <span className="text-sm opacity-60">🟠 P2 (High)</span>
             <span className="text-sm font-medium">{p2Tasks}</span>
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-sm opacity-60">🔵 P3 (medium)</span>
+            <span className="text-sm opacity-60">🔵 P3 (Medium)</span>
             <span className="text-sm font-medium">{p3Tasks}</span>
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-sm opacity-60">⚪ P4 (low)</span>
+            <span className="text-sm opacity-60">⚪ P4 (Low)</span>
             <span className="text-sm font-medium">{p4Tasks}</span>
           </div>
         </div>
@@ -152,13 +152,13 @@ export const ProductivityDashboard = () => {
 
       {/* Goals */}
       <div className="border border-minimal-border p-6">
-        <h2 className="text-lg font-medium mb-4">goals</h2>
+        <h2 className="text-lg font-medium mb-4">Goals</h2>
 
         <div className="space-y-4">
           {/* Daily Goal */}
           <div>
             <div className="flex items-center justify-between mb-2">
-              <span className="text-sm opacity-60">daily goal</span>
+              <span className="text-sm opacity-60">Daily Goal</span>
               <span className="text-sm font-medium">
                 {stats.tasksCompletedToday}/{karma.dailyGoal}
               </span>
@@ -176,7 +176,7 @@ export const ProductivityDashboard = () => {
           {/* Weekly Goal */}
           <div>
             <div className="flex items-center justify-between mb-2">
-              <span className="text-sm opacity-60">weekly goal</span>
+              <span className="text-sm opacity-60">Weekly Goal</span>
               <span className="text-sm font-medium">
                 {stats.tasksCompletedThisWeek}/{karma.weeklyGoal}
               </span>

@@ -31,6 +31,7 @@ const STORAGE_KEYS = {
   FILTERS: 'todoist_filters',
   KARMA: 'todoist_karma',
   VIEW_STATE: 'todoist_view_state',
+  THEME: 'todoist_theme',
 };
 
 const loadFromStorage = <T>(key: string, defaultValue: T): T => {
@@ -62,6 +63,7 @@ interface TaskStore {
   filters: Filter[];
   karma: KarmaProfile;
   viewState: ViewState;
+  theme: 'light' | 'dark';
 
   // Projects
   addProject: (project: Omit<Project, 'id' | 'createdAt' | 'sections'>) => void;
@@ -117,6 +119,11 @@ interface TaskStore {
   goToLabel: (labelId: string) => void;
   goToFilter: (filterId: string) => void;
   goToInsights: () => void;
+  goToCompleted: () => void;
+
+  // Theme
+  toggleTheme: () => void;
+  setTheme: (theme: 'light' | 'dark') => void;
 
   // Queries
   getTasksForCurrentView: () => Task[];
@@ -161,6 +168,7 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
   viewState: {
     type: ViewType.TODAY,
   },
+  theme: 'light',
 
   // ========================================================================
   // PROJECTS
@@ -688,6 +696,42 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
     get().setViewState({ type: ViewType.INSIGHTS });
   },
 
+  goToCompleted: () => {
+    get().setViewState({ type: ViewType.COMPLETED });
+  },
+
+  // ========================================================================
+  // THEME
+  // ========================================================================
+
+  toggleTheme: () => {
+    set((state) => {
+      const newTheme = state.theme === 'light' ? 'dark' : 'light';
+      saveToStorage(STORAGE_KEYS.THEME, newTheme);
+
+      // Apply theme to document
+      if (newTheme === 'dark') {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+
+      return { theme: newTheme };
+    });
+  },
+
+  setTheme: (theme) => {
+    set({ theme });
+    saveToStorage(STORAGE_KEYS.THEME, theme);
+
+    // Apply theme to document
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  },
+
   // ========================================================================
   // QUERIES
   // ========================================================================
@@ -991,7 +1035,15 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
       type: ViewType.TODAY,
     });
 
-    set({ tasks, projects, labels, filters, karma, viewState });
+    // Load theme and apply to document
+    const savedTheme = loadFromStorage<'light' | 'dark'>(STORAGE_KEYS.THEME, 'light');
+    if (savedTheme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+
+    set({ tasks, projects, labels, filters, karma, viewState, theme: savedTheme });
 
     // If no projects exist, run migration
     if (projects.length === 0) {
@@ -1004,33 +1056,9 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
     const oldTasks = loadFromStorage<any[]>('tasks', []);
 
     if (oldTasks.length === 0) {
-      // No old data, create default projects
-      const inboxProject: Project = {
-        id: crypto.randomUUID(),
-        name: 'Inbox',
-        color: '#999999',
-        icon: '📥',
-        isFavorite: true,
-        isArchived: false,
-        order: 0,
-        createdAt: formatDate(new Date()),
-        sections: [],
-      };
-
-      const workProject: Project = {
-        id: crypto.randomUUID(),
-        name: 'Work',
-        color: '#2196F3',
-        icon: '💼',
-        isFavorite: true,
-        isArchived: false,
-        order: 1,
-        createdAt: formatDate(new Date()),
-        sections: [],
-      };
-
-      set({ projects: [inboxProject, workProject] });
-      saveToStorage(STORAGE_KEYS.PROJECTS, [inboxProject, workProject]);
+      // No old data, start with empty projects
+      set({ projects: [] });
+      saveToStorage(STORAGE_KEYS.PROJECTS, []);
       return;
     }
 

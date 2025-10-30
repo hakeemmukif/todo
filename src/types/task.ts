@@ -137,6 +137,7 @@ export interface Task {
 
   // Dates
   dueDate?: string;
+  dueTime?: string;
   createdAt: string;
   updatedAt: string;
 

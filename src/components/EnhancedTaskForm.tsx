@@ -184,44 +184,44 @@ export const EnhancedTaskForm = ({ isOpen, onClose, taskId }: EnhancedTaskFormPr
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
-      <div className="bg-minimal-bg border border-minimal-border w-full max-w-2xl p-6 max-h-[90vh] overflow-y-auto">
-        <h2 className="text-lg font-medium mb-6">
+    <div className="fixed inset-0 bg-black bg-opacity-30 dark:bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-minimal-bg dark:bg-[#0A0A0A] border border-minimal-border dark:border-[#2A2A2A] w-full max-w-2xl p-6 max-h-[90vh] overflow-y-auto">
+        <h2 className="text-lg font-medium mb-6 text-minimal-text dark:text-[#FAFAFA]">
           {taskId ? 'edit_task' : 'add_task'}
         </h2>
 
         <form onSubmit={handleSubmit}>
           {/* Task Title */}
           <div className="mb-4">
-            <label className="block text-xs opacity-60 mb-2">title*</label>
+            <label className="block text-xs opacity-60 mb-2 text-minimal-text dark:text-[#FAFAFA]">title*</label>
             <input
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="task name"
-              className="w-full px-3 py-2 border border-minimal-border focus:outline-none focus:border-minimal-text bg-transparent text-sm"
+              className="w-full px-3 py-2 border border-minimal-border dark:border-[#2A2A2A] focus:outline-none focus:border-minimal-text dark:focus:border-[#FAFAFA] bg-transparent text-sm text-minimal-text dark:text-[#FAFAFA]"
               autoFocus
             />
           </div>
 
           {/* Description */}
           <div className="mb-4">
-            <label className="block text-xs opacity-60 mb-2">description</label>
+            <label className="block text-xs opacity-60 mb-2 text-minimal-text dark:text-[#FAFAFA]">description</label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="add details..."
               rows={3}
-              className="w-full px-3 py-2 border border-minimal-border focus:outline-none focus:border-minimal-text bg-transparent text-sm resize-none"
+              className="w-full px-3 py-2 border border-minimal-border dark:border-[#2A2A2A] focus:outline-none focus:border-minimal-text dark:focus:border-[#FAFAFA] bg-transparent text-sm resize-none text-minimal-text dark:text-[#FAFAFA]"
             />
           </div>
 
           {/* Due Date with NLP */}
           <div className="mb-4">
-            <label className="block text-xs opacity-60 mb-2">
+            <label className="block text-xs opacity-60 mb-2 text-minimal-text dark:text-[#FAFAFA]">
               due date
               {parsedDueDate && (
-                <span className="ml-2 text-minimal-text">
+                <span className="ml-2 text-minimal-text dark:text-[#FAFAFA]">
                   → {formatDateForDisplay(parsedDueDate)}
                 </span>
               )}
@@ -231,19 +231,19 @@ export const EnhancedTaskForm = ({ isOpen, onClose, taskId }: EnhancedTaskFormPr
               value={dueDateInput}
               onChange={(e) => setDueDateInput(e.target.value)}
               placeholder="today, tomorrow, next monday, in 3 days..."
-              className="w-full px-3 py-2 border border-minimal-border focus:outline-none focus:border-minimal-text bg-transparent text-sm"
+              className="w-full px-3 py-2 border border-minimal-border dark:border-[#2A2A2A] focus:outline-none focus:border-minimal-text dark:focus:border-[#FAFAFA] bg-transparent text-sm text-minimal-text dark:text-[#FAFAFA]"
             />
-            <div className="mt-1 text-xs opacity-40">
+            <div className="mt-1 text-xs opacity-40 text-minimal-text dark:text-[#FAFAFA]">
               examples: today, tomorrow, next friday, in 2 weeks, 2024-12-25
             </div>
           </div>
 
           {/* Recurrence with NLP */}
           <div className="mb-4">
-            <label className="block text-xs opacity-60 mb-2">
+            <label className="block text-xs opacity-60 mb-2 text-minimal-text dark:text-[#FAFAFA]">
               recurrence
               {parsedRecurrence && (
-                <span className="ml-2 text-minimal-text">
+                <span className="ml-2 text-minimal-text dark:text-[#FAFAFA]">
                   ✓ pattern recognized
                 </span>
               )}
@@ -253,20 +253,20 @@ export const EnhancedTaskForm = ({ isOpen, onClose, taskId }: EnhancedTaskFormPr
               value={recurrenceInput}
               onChange={(e) => setRecurrenceInput(e.target.value)}
               placeholder="every day, every weekday, every 2 weeks..."
-              className="w-full px-3 py-2 border border-minimal-border focus:outline-none focus:border-minimal-text bg-transparent text-sm"
+              className="w-full px-3 py-2 border border-minimal-border dark:border-[#2A2A2A] focus:outline-none focus:border-minimal-text dark:focus:border-[#FAFAFA] bg-transparent text-sm text-minimal-text dark:text-[#FAFAFA]"
             />
-            <div className="mt-1 text-xs opacity-40">
+            <div className="mt-1 text-xs opacity-40 text-minimal-text dark:text-[#FAFAFA]">
               examples: every day, every weekday, every monday, every 2 weeks
             </div>
           </div>
 
           {/* Project Selector */}
           <div className="mb-4">
-            <label className="block text-xs opacity-60 mb-2">project*</label>
+            <label className="block text-xs opacity-60 mb-2 text-minimal-text dark:text-[#FAFAFA]">project*</label>
             <select
               value={projectId}
               onChange={(e) => setProjectId(e.target.value)}
-              className="w-full px-3 py-2 border border-minimal-border focus:outline-none focus:border-minimal-text bg-minimal-bg text-sm"
+              className="w-full px-3 py-2 border border-minimal-border dark:border-[#2A2A2A] focus:outline-none focus:border-minimal-text dark:focus:border-[#FAFAFA] bg-minimal-bg dark:bg-[#0A0A0A] text-sm text-minimal-text dark:text-[#FAFAFA]"
             >
               {projects.filter(p => !p.isArchived).map((project) => (
                 <option key={project.id} value={project.id}>
@@ -278,17 +278,17 @@ export const EnhancedTaskForm = ({ isOpen, onClose, taskId }: EnhancedTaskFormPr
 
           {/* Priority Selector */}
           <div className="mb-4">
-            <label className="block text-xs opacity-60 mb-2">priority</label>
+            <label className="block text-xs opacity-60 mb-2 text-minimal-text dark:text-[#FAFAFA]">priority</label>
             <div className="flex gap-2">
               {[Priority.P1, Priority.P2, Priority.P3, Priority.P4].map((p) => (
                 <button
                   key={p}
                   type="button"
                   onClick={() => setPriority(p)}
-                  className={`flex-1 px-3 py-2 border text-sm transition-all ${
+                  className={`flex-1 px-3 py-2 border text-sm transition-all text-minimal-text dark:text-[#FAFAFA] ${
                     priority === p
-                      ? 'border-minimal-text bg-minimal-hover'
-                      : 'border-minimal-border hover:bg-minimal-hover'
+                      ? 'border-minimal-text dark:border-[#FAFAFA] bg-minimal-hover dark:bg-[#1A1A1A]'
+                      : 'border-minimal-border dark:border-[#2A2A2A] hover:bg-minimal-hover dark:hover:bg-[#1A1A1A]'
                   }`}
                 >
                   {PRIORITY_ICONS[p]} {p.toUpperCase()}
@@ -300,7 +300,7 @@ export const EnhancedTaskForm = ({ isOpen, onClose, taskId }: EnhancedTaskFormPr
           {/* Labels Selector */}
           {labels.length > 0 && (
             <div className="mb-6">
-              <label className="block text-xs opacity-60 mb-2">
+              <label className="block text-xs opacity-60 mb-2 text-minimal-text dark:text-[#FAFAFA]">
                 labels ({selectedLabels.length} selected)
               </label>
               <div className="flex flex-wrap gap-2">
@@ -309,10 +309,10 @@ export const EnhancedTaskForm = ({ isOpen, onClose, taskId }: EnhancedTaskFormPr
                     key={label.id}
                     type="button"
                     onClick={() => handleLabelToggle(label.id)}
-                    className={`px-3 py-1 text-xs border transition-all ${
+                    className={`px-3 py-1 text-xs border transition-all text-minimal-text dark:text-[#FAFAFA] ${
                       selectedLabels.includes(label.id)
-                        ? 'border-minimal-text bg-minimal-hover'
-                        : 'border-minimal-border hover:bg-minimal-hover'
+                        ? 'border-minimal-text dark:border-[#FAFAFA] bg-minimal-hover dark:bg-[#1A1A1A]'
+                        : 'border-minimal-border dark:border-[#2A2A2A] hover:bg-minimal-hover dark:hover:bg-[#1A1A1A]'
                     }`}
                     style={{
                       borderLeftColor: label.color,
@@ -328,7 +328,7 @@ export const EnhancedTaskForm = ({ isOpen, onClose, taskId }: EnhancedTaskFormPr
 
           {/* Reminders */}
           <div className="mb-6">
-            <label className="block text-xs opacity-60 mb-2">
+            <label className="block text-xs opacity-60 mb-2 text-minimal-text dark:text-[#FAFAFA]">
               reminders ({tempReminders.length})
             </label>
 
@@ -338,7 +338,7 @@ export const EnhancedTaskForm = ({ isOpen, onClose, taskId }: EnhancedTaskFormPr
                 {tempReminders.map((reminder) => (
                   <div
                     key={reminder.id}
-                    className="flex items-center justify-between px-3 py-2 border border-minimal-border text-xs"
+                    className="flex items-center justify-between px-3 py-2 border border-minimal-border dark:border-[#2A2A2A] text-xs text-minimal-text dark:text-[#FAFAFA]"
                   >
                     <span>
                       {reminder.type === 'relative'
@@ -348,7 +348,7 @@ export const EnhancedTaskForm = ({ isOpen, onClose, taskId }: EnhancedTaskFormPr
                     <button
                       type="button"
                       onClick={() => handleDeleteReminder(reminder.id)}
-                      className="text-xs opacity-60 hover:opacity-100"
+                      className="text-xs opacity-60 hover:opacity-100 text-minimal-text dark:text-[#FAFAFA]"
                     >
                       remove
                     </button>
@@ -365,7 +365,7 @@ export const EnhancedTaskForm = ({ isOpen, onClose, taskId }: EnhancedTaskFormPr
                   onChange={(e) =>
                     setReminderInput({ ...reminderInput, type: e.target.value as 'absolute' | 'relative' })
                   }
-                  className="w-full px-3 py-2 border border-minimal-border focus:outline-none focus:border-minimal-text bg-minimal-bg text-sm mb-2"
+                  className="w-full px-3 py-2 border border-minimal-border dark:border-[#2A2A2A] focus:outline-none focus:border-minimal-text dark:focus:border-[#FAFAFA] bg-minimal-bg dark:bg-[#0A0A0A] text-sm mb-2 text-minimal-text dark:text-[#FAFAFA]"
                 >
                   <option value="relative">relative (days before due date)</option>
                   <option value="absolute">absolute (specific date/time)</option>
@@ -380,7 +380,7 @@ export const EnhancedTaskForm = ({ isOpen, onClose, taskId }: EnhancedTaskFormPr
                       setReminderInput({ ...reminderInput, relativeDays: parseInt(e.target.value, 10) })
                     }
                     placeholder="days before"
-                    className="w-full px-3 py-2 border border-minimal-border focus:outline-none focus:border-minimal-text bg-transparent text-sm"
+                    className="w-full px-3 py-2 border border-minimal-border dark:border-[#2A2A2A] focus:outline-none focus:border-minimal-text dark:focus:border-[#FAFAFA] bg-transparent text-sm text-minimal-text dark:text-[#FAFAFA]"
                   />
                 ) : (
                   <input
@@ -389,19 +389,19 @@ export const EnhancedTaskForm = ({ isOpen, onClose, taskId }: EnhancedTaskFormPr
                     onChange={(e) =>
                       setReminderInput({ ...reminderInput, absoluteDatetimeInput: e.target.value })
                     }
-                    className="w-full px-3 py-2 border border-minimal-border focus:outline-none focus:border-minimal-text bg-transparent text-sm"
+                    className="w-full px-3 py-2 border border-minimal-border dark:border-[#2A2A2A] focus:outline-none focus:border-minimal-text dark:focus:border-[#FAFAFA] bg-transparent text-sm text-minimal-text dark:text-[#FAFAFA]"
                   />
                 )}
               </div>
               <button
                 type="button"
                 onClick={handleAddReminder}
-                className="px-4 py-2 text-sm border border-minimal-border hover:bg-minimal-hover transition-colors"
+                className="px-4 py-2 text-sm border border-minimal-border dark:border-[#2A2A2A] hover:bg-minimal-hover dark:hover:bg-[#1A1A1A] transition-colors text-minimal-text dark:text-[#FAFAFA]"
               >
                 add reminder
               </button>
             </div>
-            <div className="mt-1 text-xs opacity-40">
+            <div className="mt-1 text-xs opacity-40 text-minimal-text dark:text-[#FAFAFA]">
               {reminderInput.type === 'relative'
                 ? 'reminder will be shown X days before the task is due'
                 : 'reminder will be shown at the specific date and time'}
@@ -409,18 +409,18 @@ export const EnhancedTaskForm = ({ isOpen, onClose, taskId }: EnhancedTaskFormPr
           </div>
 
           {/* Actions */}
-          <div className="flex gap-2 justify-end pt-4 border-t border-minimal-border">
+          <div className="flex gap-2 justify-end pt-4 border-t border-minimal-border dark:border-[#2A2A2A]">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-sm border border-minimal-border hover:bg-minimal-hover transition-colors"
+              className="px-4 py-2 text-sm border border-minimal-border dark:border-[#2A2A2A] hover:bg-minimal-hover dark:hover:bg-[#1A1A1A] transition-colors text-minimal-text dark:text-[#FAFAFA]"
             >
               cancel
             </button>
             <button
               type="submit"
               disabled={!title.trim() || !projectId}
-              className="px-4 py-2 text-sm border border-minimal-border hover:bg-minimal-hover transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              className="px-4 py-2 text-sm border border-minimal-border dark:border-[#2A2A2A] hover:bg-minimal-hover dark:hover:bg-[#1A1A1A] transition-colors disabled:opacity-40 disabled:cursor-not-allowed text-minimal-text dark:text-[#FAFAFA]"
             >
               {taskId ? 'save' : 'add'}
             </button>

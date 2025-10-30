@@ -91,29 +91,29 @@ export const FilterModal = ({ isOpen, onClose, filterId }: FilterModalProps) => 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
-      <div className="bg-minimal-bg border border-minimal-border w-full max-w-2xl p-6 max-h-[90vh] overflow-y-auto">
-        <h2 className="text-lg font-medium mb-6">
-          {filterId ? 'edit_filter' : 'add_filter'}
+    <div className="fixed inset-0 bg-black bg-opacity-30 dark:bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-minimal-bg dark:bg-[#1A1A1A] border border-minimal-border dark:border-[#2A2A2A] w-full max-w-2xl p-6 max-h-[90vh] overflow-y-auto">
+        <h2 className="text-lg font-medium mb-6 text-minimal-text dark:text-[#FAFAFA]">
+          {filterId ? 'Edit Filter' : 'Add Filter'}
         </h2>
 
         <form onSubmit={handleSubmit}>
           {/* Filter Name */}
           <div className="mb-4">
-            <label className="block text-xs opacity-60 mb-2">name*</label>
+            <label className="block text-xs opacity-60 mb-2 text-minimal-text dark:text-[#FAFAFA]">Name*</label>
             <input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="filter name"
-              className="w-full px-3 py-2 border border-minimal-border focus:outline-none focus:border-minimal-text bg-transparent text-sm"
+              placeholder="Filter name"
+              className="w-full px-3 py-2 border border-minimal-border dark:border-[#2A2A2A] focus:outline-none focus:border-minimal-text dark:focus:border-[#FAFAFA] bg-transparent text-sm text-minimal-text dark:text-[#FAFAFA] placeholder:text-minimal-text placeholder:dark:text-[#FAFAFA] placeholder:opacity-40"
               autoFocus
             />
           </div>
 
           {/* Color Picker */}
           <div className="mb-4">
-            <label className="block text-xs opacity-60 mb-2">color</label>
+            <label className="block text-xs opacity-60 mb-2 text-minimal-text dark:text-[#FAFAFA]">Color</label>
             <div className="flex flex-wrap gap-2">
               {DEFAULT_COLORS.map((c) => (
                 <button
@@ -132,17 +132,17 @@ export const FilterModal = ({ isOpen, onClose, filterId }: FilterModalProps) => 
 
           {/* Query Builder */}
           <div className="mb-4">
-            <label className="block text-xs opacity-60 mb-2">query builder</label>
+            <label className="block text-xs opacity-60 mb-2 text-minimal-text dark:text-[#FAFAFA]">Query Builder</label>
 
             {/* Project Filter */}
             <div className="mb-3">
-              <label className="block text-xs opacity-40 mb-1">project</label>
+              <label className="block text-xs opacity-40 mb-1 text-minimal-text dark:text-[#FAFAFA]">Project</label>
               <select
                 value={projectFilter}
                 onChange={(e) => setProjectFilter(e.target.value)}
-                className="w-full px-3 py-2 border border-minimal-border focus:outline-none focus:border-minimal-text bg-minimal-bg text-sm"
+                className="w-full px-3 py-2 border border-minimal-border dark:border-[#2A2A2A] focus:outline-none focus:border-minimal-text dark:focus:border-[#FAFAFA] bg-minimal-bg dark:bg-[#1A1A1A] text-sm text-minimal-text dark:text-[#FAFAFA]"
               >
-                <option value="">any project</option>
+                <option value="">Any project</option>
                 {projects.filter(p => !p.isArchived).map((project) => (
                   <option key={project.id} value={project.id}>
                     {project.icon} {project.name}
@@ -154,13 +154,13 @@ export const FilterModal = ({ isOpen, onClose, filterId }: FilterModalProps) => 
             {/* Label Filter */}
             {labels.length > 0 && (
               <div className="mb-3">
-                <label className="block text-xs opacity-40 mb-1">label</label>
+                <label className="block text-xs opacity-40 mb-1 text-minimal-text dark:text-[#FAFAFA]">Label</label>
                 <select
                   value={labelFilter}
                   onChange={(e) => setLabelFilter(e.target.value)}
-                  className="w-full px-3 py-2 border border-minimal-border focus:outline-none focus:border-minimal-text bg-minimal-bg text-sm"
+                  className="w-full px-3 py-2 border border-minimal-border dark:border-[#2A2A2A] focus:outline-none focus:border-minimal-text dark:focus:border-[#FAFAFA] bg-minimal-bg dark:bg-[#1A1A1A] text-sm text-minimal-text dark:text-[#FAFAFA]"
                 >
-                  <option value="">any label</option>
+                  <option value="">Any label</option>
                   {labels.map((label) => (
                     <option key={label.id} value={label.id}>
                       @{label.name}
@@ -172,48 +172,48 @@ export const FilterModal = ({ isOpen, onClose, filterId }: FilterModalProps) => 
 
             {/* Priority Filter */}
             <div className="mb-3">
-              <label className="block text-xs opacity-40 mb-1">priority</label>
+              <label className="block text-xs opacity-40 mb-1 text-minimal-text dark:text-[#FAFAFA]">Priority</label>
               <select
                 value={priorityFilter}
                 onChange={(e) => setPriorityFilter(e.target.value as Priority | '')}
-                className="w-full px-3 py-2 border border-minimal-border focus:outline-none focus:border-minimal-text bg-minimal-bg text-sm"
+                className="w-full px-3 py-2 border border-minimal-border dark:border-[#2A2A2A] focus:outline-none focus:border-minimal-text dark:focus:border-[#FAFAFA] bg-minimal-bg dark:bg-[#1A1A1A] text-sm text-minimal-text dark:text-[#FAFAFA]"
               >
-                <option value="">any priority</option>
-                <option value={Priority.P1}>P1 (urgent)</option>
-                <option value={Priority.P2}>P2 (high)</option>
-                <option value={Priority.P3}>P3 (medium)</option>
-                <option value={Priority.P4}>P4 (low)</option>
+                <option value="">Any priority</option>
+                <option value={Priority.P1}>P1 (Urgent)</option>
+                <option value={Priority.P2}>P2 (High)</option>
+                <option value={Priority.P3}>P3 (Medium)</option>
+                <option value={Priority.P4}>P4 (Low)</option>
               </select>
             </div>
 
             {/* Due Date Filter */}
             <div className="mb-3">
-              <label className="block text-xs opacity-40 mb-1">due date</label>
+              <label className="block text-xs opacity-40 mb-1 text-minimal-text dark:text-[#FAFAFA]">Due Date</label>
               <select
                 value={dueDateFilter}
                 onChange={(e) => setDueDateFilter(e.target.value)}
-                className="w-full px-3 py-2 border border-minimal-border focus:outline-none focus:border-minimal-text bg-minimal-bg text-sm"
+                className="w-full px-3 py-2 border border-minimal-border dark:border-[#2A2A2A] focus:outline-none focus:border-minimal-text dark:focus:border-[#FAFAFA] bg-minimal-bg dark:bg-[#1A1A1A] text-sm text-minimal-text dark:text-[#FAFAFA]"
               >
-                <option value="">any time</option>
-                <option value="today">today</option>
-                <option value="overdue">overdue</option>
-                <option value="this_week">this week</option>
-                <option value="no_date">no date</option>
+                <option value="">Any time</option>
+                <option value="today">Today</option>
+                <option value="overdue">Overdue</option>
+                <option value="this_week">This week</option>
+                <option value="no_date">No date</option>
               </select>
             </div>
           </div>
 
           {/* Generated Query */}
           <div className="mb-4">
-            <label className="block text-xs opacity-60 mb-2">generated query</label>
+            <label className="block text-xs opacity-60 mb-2 text-minimal-text dark:text-[#FAFAFA]">Generated Query</label>
             <input
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="project:xyz & label:abc & priority:p1"
-              className="w-full px-3 py-2 border border-minimal-border focus:outline-none focus:border-minimal-text bg-transparent text-sm"
+              className="w-full px-3 py-2 border border-minimal-border dark:border-[#2A2A2A] focus:outline-none focus:border-minimal-text dark:focus:border-[#FAFAFA] bg-transparent text-sm text-minimal-text dark:text-[#FAFAFA] placeholder:text-minimal-text placeholder:dark:text-[#FAFAFA] placeholder:opacity-40"
             />
-            <div className="mt-1 text-xs opacity-40">
+            <div className="mt-1 text-xs opacity-40 text-minimal-text dark:text-[#FAFAFA]">
               you can also manually edit the query using: project:id, label:id, priority:p1-p4, due:today|overdue|this_week|no_date
             </div>
           </div>
@@ -227,7 +227,7 @@ export const FilterModal = ({ isOpen, onClose, filterId }: FilterModalProps) => 
                 onChange={(e) => setIsFavorite(e.target.checked)}
                 className="w-4 h-4"
               />
-              <span className="text-sm">add to favorites</span>
+              <span className="text-sm text-minimal-text dark:text-[#FAFAFA]">Add to Favorites</span>
             </label>
           </div>
 
@@ -236,16 +236,16 @@ export const FilterModal = ({ isOpen, onClose, filterId }: FilterModalProps) => 
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-sm border border-minimal-border hover:bg-minimal-hover transition-colors"
+              className="px-4 py-2 text-sm border border-minimal-border dark:border-[#2A2A2A] hover:bg-minimal-hover dark:hover:bg-[#2A2A2A] transition-colors text-minimal-text dark:text-[#FAFAFA]"
             >
-              cancel
+              Cancel
             </button>
             <button
               type="submit"
               disabled={!name.trim() || !query.trim()}
-              className="px-4 py-2 text-sm border border-minimal-border hover:bg-minimal-hover transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              className="px-4 py-2 text-sm border border-minimal-border dark:border-[#2A2A2A] hover:bg-minimal-hover dark:hover:bg-[#2A2A2A] transition-colors disabled:opacity-40 disabled:cursor-not-allowed text-minimal-text dark:text-[#FAFAFA]"
             >
-              {filterId ? 'save' : 'add'}
+              {filterId ? 'Save' : 'Add'}
             </button>
           </div>
         </form>
