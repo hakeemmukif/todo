@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useTaskStore } from './store/taskStore';
-import { Priority, TaskStatus, PRIORITY_ICONS, ViewType } from './types/task';
+import { Priority, TaskStatus, ViewType } from './types/task';
 import { Sidebar } from './components/Sidebar';
 import { EnhancedTaskForm } from './components/EnhancedTaskForm';
 import { ProductivityDashboard } from './components/ProductivityDashboard';

@@ -67,7 +67,7 @@ export const Sidebar = () => {
   };
 
   return (
-    <div className="w-64 border-r border-minimal-border dark:border-[#2A2A2A] bg-minimal-bg dark:bg-[#0A0A0A] flex flex-col h-full transition-colors duration-200">
+    <div className="w-64 border-r border-minimal-border dark:border-[#2A2A2A] bg-minimal-bg dark:bg-[#0A0A0A] flex flex-col h-screen transition-colors duration-200">
       {/* Date/Time Section */}
       <div className="p-4 border-b border-minimal-border dark:border-[#2A2A2A] flex items-start justify-between">
         <div className="text-minimal-text dark:text-[#FAFAFA]">

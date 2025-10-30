@@ -187,18 +187,18 @@ export const EnhancedTaskForm = ({ isOpen, onClose, taskId }: EnhancedTaskFormPr
     <div className="fixed inset-0 bg-black bg-opacity-30 dark:bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-minimal-bg dark:bg-[#0A0A0A] border border-minimal-border dark:border-[#2A2A2A] w-full max-w-2xl p-6 max-h-[90vh] overflow-y-auto">
         <h2 className="text-lg font-medium mb-6 text-minimal-text dark:text-[#FAFAFA]">
-          {taskId ? 'edit_task' : 'add_task'}
+          {taskId ? 'Edit Task' : 'Add Task'}
         </h2>
 
         <form onSubmit={handleSubmit}>
           {/* Task Title */}
           <div className="mb-4">
-            <label className="block text-xs opacity-60 mb-2 text-minimal-text dark:text-[#FAFAFA]">title*</label>
+            <label className="block text-xs opacity-60 mb-2 text-minimal-text dark:text-[#FAFAFA]">Title*</label>
             <input
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="task name"
+              placeholder="Task name"
               className="w-full px-3 py-2 border border-minimal-border dark:border-[#2A2A2A] focus:outline-none focus:border-minimal-text dark:focus:border-[#FAFAFA] bg-transparent text-sm text-minimal-text dark:text-[#FAFAFA]"
               autoFocus
             />
@@ -206,11 +206,11 @@ export const EnhancedTaskForm = ({ isOpen, onClose, taskId }: EnhancedTaskFormPr
 
           {/* Description */}
           <div className="mb-4">
-            <label className="block text-xs opacity-60 mb-2 text-minimal-text dark:text-[#FAFAFA]">description</label>
+            <label className="block text-xs opacity-60 mb-2 text-minimal-text dark:text-[#FAFAFA]">Description</label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="add details..."
+              placeholder="Add details..."
               rows={3}
               className="w-full px-3 py-2 border border-minimal-border dark:border-[#2A2A2A] focus:outline-none focus:border-minimal-text dark:focus:border-[#FAFAFA] bg-transparent text-sm resize-none text-minimal-text dark:text-[#FAFAFA]"
             />
@@ -219,7 +219,7 @@ export const EnhancedTaskForm = ({ isOpen, onClose, taskId }: EnhancedTaskFormPr
           {/* Due Date with NLP */}
           <div className="mb-4">
             <label className="block text-xs opacity-60 mb-2 text-minimal-text dark:text-[#FAFAFA]">
-              due date
+              Due Date
               {parsedDueDate && (
                 <span className="ml-2 text-minimal-text dark:text-[#FAFAFA]">
                   → {formatDateForDisplay(parsedDueDate)}
@@ -230,18 +230,18 @@ export const EnhancedTaskForm = ({ isOpen, onClose, taskId }: EnhancedTaskFormPr
               type="text"
               value={dueDateInput}
               onChange={(e) => setDueDateInput(e.target.value)}
-              placeholder="today, tomorrow, next monday, in 3 days..."
+              placeholder="Today, tomorrow, next Monday, in 3 days..."
               className="w-full px-3 py-2 border border-minimal-border dark:border-[#2A2A2A] focus:outline-none focus:border-minimal-text dark:focus:border-[#FAFAFA] bg-transparent text-sm text-minimal-text dark:text-[#FAFAFA]"
             />
             <div className="mt-1 text-xs opacity-40 text-minimal-text dark:text-[#FAFAFA]">
-              examples: today, tomorrow, next friday, in 2 weeks, 2024-12-25
+              Examples: today, tomorrow, next Friday, in 2 weeks, 2024-12-25
             </div>
           </div>
 
           {/* Recurrence with NLP */}
           <div className="mb-4">
             <label className="block text-xs opacity-60 mb-2 text-minimal-text dark:text-[#FAFAFA]">
-              recurrence
+              Recurrence
               {parsedRecurrence && (
                 <span className="ml-2 text-minimal-text dark:text-[#FAFAFA]">
                   ✓ pattern recognized
@@ -252,17 +252,17 @@ export const EnhancedTaskForm = ({ isOpen, onClose, taskId }: EnhancedTaskFormPr
               type="text"
               value={recurrenceInput}
               onChange={(e) => setRecurrenceInput(e.target.value)}
-              placeholder="every day, every weekday, every 2 weeks..."
+              placeholder="Every day, every weekday, every 2 weeks..."
               className="w-full px-3 py-2 border border-minimal-border dark:border-[#2A2A2A] focus:outline-none focus:border-minimal-text dark:focus:border-[#FAFAFA] bg-transparent text-sm text-minimal-text dark:text-[#FAFAFA]"
             />
             <div className="mt-1 text-xs opacity-40 text-minimal-text dark:text-[#FAFAFA]">
-              examples: every day, every weekday, every monday, every 2 weeks
+              Examples: every day, every weekday, every Monday, every 2 weeks
             </div>
           </div>
 
           {/* Project Selector */}
           <div className="mb-4">
-            <label className="block text-xs opacity-60 mb-2 text-minimal-text dark:text-[#FAFAFA]">project*</label>
+            <label className="block text-xs opacity-60 mb-2 text-minimal-text dark:text-[#FAFAFA]">Project*</label>
             <select
               value={projectId}
               onChange={(e) => setProjectId(e.target.value)}
@@ -278,7 +278,7 @@ export const EnhancedTaskForm = ({ isOpen, onClose, taskId }: EnhancedTaskFormPr
 
           {/* Priority Selector */}
           <div className="mb-4">
-            <label className="block text-xs opacity-60 mb-2 text-minimal-text dark:text-[#FAFAFA]">priority</label>
+            <label className="block text-xs opacity-60 mb-2 text-minimal-text dark:text-[#FAFAFA]">Priority</label>
             <div className="flex gap-2">
               {[Priority.P1, Priority.P2, Priority.P3, Priority.P4].map((p) => (
                 <button
@@ -329,7 +329,7 @@ export const EnhancedTaskForm = ({ isOpen, onClose, taskId }: EnhancedTaskFormPr
           {/* Reminders */}
           <div className="mb-6">
             <label className="block text-xs opacity-60 mb-2 text-minimal-text dark:text-[#FAFAFA]">
-              reminders ({tempReminders.length})
+              Reminders ({tempReminders.length})
             </label>
 
             {/* Existing Reminders */}
@@ -367,8 +367,8 @@ export const EnhancedTaskForm = ({ isOpen, onClose, taskId }: EnhancedTaskFormPr
                   }
                   className="w-full px-3 py-2 border border-minimal-border dark:border-[#2A2A2A] focus:outline-none focus:border-minimal-text dark:focus:border-[#FAFAFA] bg-minimal-bg dark:bg-[#0A0A0A] text-sm mb-2 text-minimal-text dark:text-[#FAFAFA]"
                 >
-                  <option value="relative">relative (days before due date)</option>
-                  <option value="absolute">absolute (specific date/time)</option>
+                  <option value="relative">Relative (Days Before Due Date)</option>
+                  <option value="absolute">Absolute (Specific Date/Time)</option>
                 </select>
 
                 {reminderInput.type === 'relative' ? (
@@ -398,7 +398,7 @@ export const EnhancedTaskForm = ({ isOpen, onClose, taskId }: EnhancedTaskFormPr
                 onClick={handleAddReminder}
                 className="px-4 py-2 text-sm border border-minimal-border dark:border-[#2A2A2A] hover:bg-minimal-hover dark:hover:bg-[#1A1A1A] transition-colors text-minimal-text dark:text-[#FAFAFA]"
               >
-                add reminder
+                Add Reminder
               </button>
             </div>
             <div className="mt-1 text-xs opacity-40 text-minimal-text dark:text-[#FAFAFA]">
@@ -415,14 +415,14 @@ export const EnhancedTaskForm = ({ isOpen, onClose, taskId }: EnhancedTaskFormPr
               onClick={onClose}
               className="px-4 py-2 text-sm border border-minimal-border dark:border-[#2A2A2A] hover:bg-minimal-hover dark:hover:bg-[#1A1A1A] transition-colors text-minimal-text dark:text-[#FAFAFA]"
             >
-              cancel
+              Cancel
             </button>
             <button
               type="submit"
               disabled={!title.trim() || !projectId}
               className="px-4 py-2 text-sm border border-minimal-border dark:border-[#2A2A2A] hover:bg-minimal-hover dark:hover:bg-[#1A1A1A] transition-colors disabled:opacity-40 disabled:cursor-not-allowed text-minimal-text dark:text-[#FAFAFA]"
             >
-              {taskId ? 'save' : 'add'}
+              {taskId ? 'Save' : 'Add'}
             </button>
           </div>
         </form>

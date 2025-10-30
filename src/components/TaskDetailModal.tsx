@@ -73,8 +73,6 @@ export const TaskDetailModal = ({ isOpen, onClose, taskId }: TaskDetailModalProp
 
   if (!isOpen || !task) return null;
 
-  const project = projects.find(p => p.id === projectId);
-
   return (
     <div className="fixed inset-0 bg-black bg-opacity-30 dark:bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-minimal-bg dark:bg-[#1A1A1A] border border-minimal-border dark:border-[#2A2A2A] w-full max-w-2xl max-h-[90vh] overflow-y-auto">
