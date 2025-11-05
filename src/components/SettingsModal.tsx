@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { useTaskStore } from '../store/taskStore';
 import { X } from 'lucide-react';
 

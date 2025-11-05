@@ -7,16 +7,26 @@ import { parseISO, isBefore, isAfter, subMinutes } from 'date-fns';
  * Checks for due reminders and triggers notifications
  */
 
-let schedulerInterval: number | null = null;
+let schedulerInterval: ReturnType<typeof setInterval> | null = null;
 const CHECK_INTERVAL_MS = 60000; // Check every minute
 const shownReminders = new Set<string>();
 
 /**
  * Check if a reminder is due now (within the last minute)
  */
-const isReminderDue = (reminder: Reminder): boolean => {
+const isReminderDue = (reminder: Reminder, task: Task): boolean => {
   try {
-    const reminderTime = parseISO(reminder.datetime);
+    let reminderTime: Date;
+
+    if (reminder.type === 'absolute' && reminder.dateTime) {
+      reminderTime = parseISO(reminder.dateTime);
+    } else if (reminder.type === 'relative' && reminder.relativeMinutes !== null && task.dueDate) {
+      const dueDate = parseISO(task.dueDate);
+      reminderTime = subMinutes(dueDate, reminder.relativeMinutes);
+    } else {
+      return false;
+    }
+
     const now = new Date();
     const oneMinuteAgo = subMinutes(now, 1);
 
@@ -34,16 +44,16 @@ const isReminderDue = (reminder: Reminder): boolean => {
 const processReminder = (task: Task, reminder: Reminder) => {
   const reminderKey = `${task.id}-${reminder.id}`;
 
-  // Skip if already shown
-  if (shownReminders.has(reminderKey)) {
+  // Skip if already shown or already triggered
+  if (shownReminders.has(reminderKey) || reminder.isTriggered) {
     return;
   }
 
-  if (isReminderDue(reminder)) {
+  if (isReminderDue(reminder, task)) {
     showTaskReminder(task.title, task.dueDate);
     shownReminders.add(reminderKey);
 
-    // Clear from shown reminders after 2 minutes to allow recurring reminders
+    // Clear from shown reminders after 2 minutes
     setTimeout(() => {
       shownReminders.delete(reminderKey);
     }, 120000);
@@ -104,17 +114,17 @@ export const stopReminderScheduler = () => {
 export const calculateReminderDatetime = (
   type: 'absolute' | 'relative',
   absoluteDatetime: string | null,
-  relativeDays: number | null,
+  relativeMinutes: number | null,
   taskDueDate: string | null
 ): string | null => {
   if (type === 'absolute' && absoluteDatetime) {
     return absoluteDatetime;
   }
 
-  if (type === 'relative' && relativeDays !== null && taskDueDate) {
+  if (type === 'relative' && relativeMinutes !== null && taskDueDate) {
     try {
       const dueDate = parseISO(taskDueDate);
-      const reminderDate = subMinutes(dueDate, relativeDays * 24 * 60); // Convert days to minutes
+      const reminderDate = subMinutes(dueDate, relativeMinutes);
       return reminderDate.toISOString();
     } catch (error) {
       console.error('Error calculating relative reminder:', error);

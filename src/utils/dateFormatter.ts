@@ -9,8 +9,6 @@ export const formatDueDate = (dueDate?: string, dueTime?: string): string => {
   const today = new Date();
   const tomorrow = new Date(today);
   tomorrow.setDate(tomorrow.getDate() + 1);
-  const yesterday = new Date(today);
-  yesterday.setDate(yesterday.getDate() - 1);
 
   // Reset time parts for comparison
   const resetTime = (d: Date) => {
@@ -21,7 +19,6 @@ export const formatDueDate = (dueDate?: string, dueTime?: string): string => {
   const dateOnly = resetTime(new Date(date));
   const todayOnly = resetTime(new Date(today));
   const tomorrowOnly = resetTime(new Date(tomorrow));
-  const yesterdayOnly = resetTime(new Date(yesterday));
 
   let dateStr = '';
 

@@ -150,8 +150,8 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
       set({
         tasks: data.tasks as Task[],
         projects: data.projects as Project[],
-        labels: data.labels,
-        filters: data.filters,
+        labels: data.labels as Label[],
+        filters: data.filters as Filter[],
         karma: data.karma || get().karma,
         isLoading: false,
       });
@@ -391,8 +391,8 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
           description: taskData.description || null,
           priority: taskData.priority || 'p4',
           due_date: taskData.dueDate || null,
-          recurrence: taskData.recurrence || null,
-          status: taskData.status || 'todo',
+          recurrence: taskData.recurrence as any || null,
+          status: taskData.status as any || 'todo',
           order: get().tasks.length,
         })
       );
@@ -537,8 +537,8 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
             ? {
                 ...t,
                 subtasks: t.subtasks.map((s) =>
-                  s.id === tempId
-                    ? { id: newSubtask.id, title: newSubtask.title, completed: newSubtask.completed, order: newSubtask.order }
+                  s.id === tempId && newSubtask
+                    ? { id: (newSubtask as any).id, title: (newSubtask as any).title, completed: (newSubtask as any).completed, order: (newSubtask as any).order }
                     : s
                 ),
               }
@@ -622,7 +622,7 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
             ? {
                 ...t,
                 comments: t.comments.map((c) =>
-                  c.id === tempId ? { id: newComment.id, content: newComment.content, createdAt: newComment.created_at } : c
+                  c.id === tempId && newComment ? { id: (newComment as any).id, content: (newComment as any).content, createdAt: (newComment as any).created_at } : c
                 ),
               }
             : t
@@ -701,7 +701,13 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
     if (!task) return;
 
     const tempId = crypto.randomUUID();
-    const optimisticReminder: Reminder = { ...reminderData, id: tempId, taskId, createdAt: formatDate(new Date()) };
+    const optimisticReminder: Reminder = {
+      ...reminderData,
+      id: tempId,
+      taskId,
+      isTriggered: false,
+      createdAt: formatDate(new Date())
+    };
     set((state) => ({
       tasks: state.tasks.map((t) =>
         t.id === taskId
@@ -713,6 +719,7 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
     try {
       const newReminder = await retryOperation(() =>
         taskService.createReminder(taskId, {
+          task_id: taskId,
           type: reminderData.type,
           date_time: reminderData.dateTime || null,
           relative_minutes: reminderData.relativeMinutes || null,

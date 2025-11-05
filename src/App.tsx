@@ -14,7 +14,6 @@ import { syncService } from './services/syncService';
 function App() {
   const { user, loading: authLoading } = useAuth();
   const {
-    loadFromStorage,
     getTasksForCurrentView,
     projects,
     labels,
@@ -27,6 +26,7 @@ function App() {
   const [taskTitle, setTaskTitle] = useState('');
   const [isTaskFormOpen, setIsTaskFormOpen] = useState(false);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
   // Initialize store when authenticated
   useEffect(() => {
@@ -96,7 +96,7 @@ function App() {
           name: 'Tasks',
           color: '#4A90E2',
           isFavorite: false,
-          viewStyle: 'list',
+          isArchived: false,
           order: 0,
         });
         // Get the newly created project
@@ -164,14 +164,38 @@ function App() {
   // Show main app if authenticated
   return (
     <div className="min-h-screen bg-minimal-bg dark:bg-[#0A0A0A] flex transition-colors duration-200">
+      {/* Mobile Overlay */}
+      {isMobileSidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+          onClick={() => setIsMobileSidebarOpen(false)}
+        />
+      )}
+
       {/* Sidebar Navigation */}
-      <Sidebar />
+      <div className={`
+        fixed lg:static inset-y-0 left-0 z-50
+        transform transition-transform duration-300 ease-in-out
+        ${isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+      `}>
+        <Sidebar onNavigate={() => setIsMobileSidebarOpen(false)} />
+      </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col">
-        <div className="container mx-auto px-6 max-w-4xl py-12">
-          <header className="mb-12">
-            <h1 className="text-2xl font-normal text-minimal-text dark:text-[#FAFAFA] mb-2">
+      <div className="flex-1 flex flex-col w-full">
+        <div className="container mx-auto px-4 sm:px-6 max-w-4xl py-6 sm:py-12">
+          <header className="mb-8 sm:mb-12 flex items-center gap-4">
+            {/* Mobile Menu Button */}
+            <button
+              onClick={() => setIsMobileSidebarOpen(true)}
+              className="lg:hidden p-2 hover:bg-minimal-hover dark:hover:bg-[#1A1A1A] transition-colors rounded"
+            >
+              <svg className="w-6 h-6 text-minimal-text dark:text-[#FAFAFA]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
+
+            <h1 className="text-xl sm:text-2xl font-normal text-minimal-text dark:text-[#FAFAFA]">
               {getViewTitle()}
             </h1>
           </header>
@@ -182,18 +206,18 @@ function App() {
           ) : (
             <>
               {/* Task Form */}
-              <div className="mb-8">
-                <form onSubmit={handleAddTask} className="flex gap-2 mb-2">
+              <div className="mb-6 sm:mb-8">
+                <form onSubmit={handleAddTask} className="flex flex-col sm:flex-row gap-2 mb-2">
                   <input
                     type="text"
                     value={taskTitle}
                     onChange={(e) => setTaskTitle(e.target.value)}
                     placeholder="Add task..."
-                    className="flex-1 px-3 py-2 border border-minimal-border dark:border-[#2A2A2A] focus:outline-none focus:border-minimal-text dark:focus:border-[#FAFAFA] bg-transparent text-sm text-minimal-text dark:text-[#FAFAFA] transition-colors placeholder:opacity-50"
+                    className="flex-1 px-3 py-2.5 sm:py-2 border border-minimal-border dark:border-[#2A2A2A] focus:outline-none focus:border-minimal-text dark:focus:border-[#FAFAFA] bg-transparent text-sm text-minimal-text dark:text-[#FAFAFA] transition-colors placeholder:opacity-50"
                   />
                   <button
                     type="submit"
-                    className="px-4 py-2 text-sm border border-minimal-border dark:border-[#2A2A2A] hover:bg-minimal-hover dark:hover:bg-[#1A1A1A] text-minimal-text dark:text-[#FAFAFA] transition-colors"
+                    className="px-4 py-2.5 sm:py-2 text-sm border border-minimal-border dark:border-[#2A2A2A] hover:bg-minimal-hover dark:hover:bg-[#1A1A1A] text-minimal-text dark:text-[#FAFAFA] transition-colors whitespace-nowrap"
                   >
                     Add
                   </button>
@@ -206,7 +230,7 @@ function App() {
                 </button>
               </div>
 
-              <div className="border-t border-minimal-border dark:border-[#2A2A2A] my-8" />
+              <div className="border-t border-minimal-border dark:border-[#2A2A2A] my-6 sm:my-8" />
 
               {/* Task List */}
               <div className="space-y-2">
@@ -232,8 +256,11 @@ function App() {
                       return (
                         <div
                           key={task.id}
-                          onClick={() => setSelectedTaskId(task.id)}
-                          className={`py-3.5 px-2 -mx-2 flex items-start gap-3 border-b border-minimal-border dark:border-[#2A2A2A] hover:bg-minimal-hover dark:hover:bg-[#1A1A1A] transition-colors cursor-pointer ${
+                          onClick={() => {
+                            setSelectedTaskId(task.id);
+                            setIsMobileSidebarOpen(false);
+                          }}
+                          className={`py-3.5 px-2 sm:px-2 -mx-2 sm:-mx-2 flex items-start gap-3 border-b border-minimal-border dark:border-[#2A2A2A] hover:bg-minimal-hover dark:hover:bg-[#1A1A1A] transition-colors cursor-pointer ${
                             task.completed ? 'opacity-60' : ''
                           }`}
                         >

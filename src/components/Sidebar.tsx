@@ -9,7 +9,11 @@ import { SettingsModal } from './SettingsModal';
 import { useAuth } from '../contexts/AuthContext';
 import { Inbox, Calendar, CalendarDays, BarChart3, Check, Sun, Moon, Plus, Settings, LogOut } from 'lucide-react';
 
-export const Sidebar = () => {
+interface SidebarProps {
+  onNavigate?: () => void;
+}
+
+export const Sidebar = ({ onNavigate }: SidebarProps = {}) => {
   const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
   const [isLabelModalOpen, setIsLabelModalOpen] = useState(false);
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
@@ -124,7 +128,10 @@ export const Sidebar = () => {
           {/* Quick Views */}
           <div className="mb-4">
             <button
-              onClick={goToInbox}
+              onClick={() => {
+                goToInbox();
+                onNavigate?.();
+              }}
               className={`w-full text-left px-3 py-2 text-sm hover:bg-minimal-hover dark:hover:bg-[#1A1A1A] transition-colors flex items-center gap-2 ${
                 isViewActive(ViewType.INBOX)
                   ? 'bg-minimal-hover dark:bg-[#1A1A1A]'
@@ -137,7 +144,10 @@ export const Sidebar = () => {
             </button>
 
             <button
-              onClick={goToToday}
+              onClick={() => {
+                goToToday();
+                onNavigate?.();
+              }}
               className={`w-full text-left px-3 py-2 text-sm hover:bg-minimal-hover dark:hover:bg-[#1A1A1A] transition-colors flex items-center gap-2 ${
                 isViewActive(ViewType.TODAY)
                   ? 'bg-minimal-hover dark:bg-[#1A1A1A]'

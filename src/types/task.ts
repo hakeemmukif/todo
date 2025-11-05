@@ -41,10 +41,10 @@ export interface Label {
 export interface Reminder {
   id: string;
   taskId: string;
-  datetime: string;
   type: 'absolute' | 'relative';
-  relativeDays?: number; // for "due date - 1 day" type reminders
-  isRecurring: boolean;
+  dateTime: string | null;  // absolute time reminder
+  relativeMinutes: number | null;  // relative reminder (e.g., 15 minutes before due date)
+  isTriggered: boolean;
   createdAt: string;
 }
 
