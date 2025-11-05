@@ -49,9 +49,12 @@ export interface Reminder {
 }
 
 // ============================================================================
-// RECURRENCE
+// RECURRENCE (DEPRECATED)
 // ============================================================================
 
+/**
+ * @deprecated Recurrence functionality has been removed. This type is kept for backwards compatibility only.
+ */
 export enum RecurrenceType {
   DAILY = 'daily',
   WEEKLY = 'weekly',
@@ -60,6 +63,9 @@ export enum RecurrenceType {
   CUSTOM = 'custom',
 }
 
+/**
+ * @deprecated Recurrence functionality has been removed. This type is kept for backwards compatibility only.
+ */
 export interface RecurrencePattern {
   type: RecurrenceType;
   interval: number; // every X days/weeks/months
@@ -141,9 +147,12 @@ export interface Task {
   createdAt: string;
   updatedAt: string;
 
-  // Recurrence
+  // Recurrence (DEPRECATED - No longer supported)
+  /** @deprecated Recurrence functionality has been removed. This field is ignored. */
   recurrence?: RecurrencePattern;
+  /** @deprecated Always false. Recurrence functionality has been removed. */
   isRecurringParent: boolean;
+  /** @deprecated Always undefined. Recurrence functionality has been removed. */
   recurringParentId?: string; // for instances of recurring tasks
 
   // Reminders
@@ -171,6 +180,39 @@ export interface Task {
     followUpDate?: string;
   };
 }
+
+// ============================================================================
+// FORM DATA TYPES
+// ============================================================================
+
+/**
+ * Utility type for task form data - excludes internal/computed fields
+ * and deprecated recurrence fields
+ */
+export type TaskFormData = Omit<
+  Task,
+  | 'id'
+  | 'createdAt'
+  | 'updatedAt'
+  | 'completed'
+  | 'completedAt'
+  | 'reminders'
+  | 'subtasks'
+  | 'comments'
+  | 'isRecurringParent'
+  | 'recurrence'
+  | 'recurringParentId'
+  | 'showUntilComplete'
+  | 'startDate'
+  | 'endDate'
+  | 'timeBlock'
+  | 'dependency'
+>;
+
+/**
+ * Simplified reminder input for forms
+ */
+export type ReminderPreset = 'none' | '5min' | '15min' | '30min' | '1hour' | '1day' | 'custom';
 
 // ============================================================================
 // FILTERS

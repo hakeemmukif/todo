@@ -14,50 +14,20 @@ import {
   Subtask,
   Comment,
   KARMA_POINTS,
-  KARMA_LEVELS,
-  KarmaEvent,
 } from '../types/task';
 import { formatDate, parseDate, isToday, startOfDay, addDays } from '../utils/dateUtils';
 import { getNextOccurrence } from '../utils/naturalLanguage';
-
-// ============================================================================
-// STORAGE UTILITIES
-// ============================================================================
-
-const STORAGE_KEYS = {
-  TASKS: 'todoist_tasks',
-  PROJECTS: 'todoist_projects',
-  LABELS: 'todoist_labels',
-  FILTERS: 'todoist_filters',
-  KARMA: 'todoist_karma',
-  VIEW_STATE: 'todoist_view_state',
-  THEME: 'todoist_theme',
-  THEME_COLOR: 'todoist_theme_color',
-};
-
-const loadFromStorage = <T>(key: string, defaultValue: T): T => {
-  try {
-    const item = localStorage.getItem(key);
-    return item ? JSON.parse(item) : defaultValue;
-  } catch {
-    return defaultValue;
-  }
-};
-
-const saveToStorage = <T>(key: string, value: T): void => {
-  try {
-    localStorage.setItem(key, JSON.stringify(value));
-  } catch (error) {
-    console.error('Failed to save to localStorage:', error);
-  }
-};
-
-// ============================================================================
-// STORE INTERFACE
-// ============================================================================
+import { taskService } from '../services/taskService';
+import { projectService } from '../services/projectService';
+import { labelService } from '../services/labelService';
+import { filterService } from '../services/filterService';
+import { karmaService } from '../services/karmaService';
+import { syncService } from '../services/syncService';
+import { retryOperation } from '../hooks/useRetry';
+import { toast } from '../utils/toast';
+import { getCurrentUser } from '../lib/supabase';
 
 interface TaskStore {
-  // Data
   tasks: Task[];
   projects: Project[];
   labels: Label[];
@@ -66,53 +36,49 @@ interface TaskStore {
   viewState: ViewState;
   theme: 'light' | 'dark';
   themeColor: string;
+  userId: string | null;
+  isLoading: boolean;
 
-  // Projects
-  addProject: (project: Omit<Project, 'id' | 'createdAt' | 'sections'>) => void;
-  updateProject: (id: string, updates: Partial<Project>) => void;
-  deleteProject: (id: string) => void;
-  reorderProjects: (projectIds: string[]) => void;
+  initializeStore: () => Promise<void>;
+  setUserId: (userId: string) => void;
+
+  addProject: (project: Omit<Project, 'id' | 'createdAt' | 'sections'>) => Promise<void>;
+  updateProject: (id: string, updates: Partial<Project>) => Promise<void>;
+  deleteProject: (id: string) => Promise<void>;
+  reorderProjects: (projectIds: string[]) => Promise<void>;
   getProjectById: (id: string) => Project | undefined;
 
-  // Sections
-  addSection: (projectId: string, name: string) => void;
-  updateSection: (projectId: string, sectionId: string, name: string) => void;
-  deleteSection: (projectId: string, sectionId: string) => void;
+  addSection: (projectId: string, name: string) => Promise<void>;
+  updateSection: (projectId: string, sectionId: string, name: string) => Promise<void>;
+  deleteSection: (projectId: string, sectionId: string) => Promise<void>;
 
-  // Labels
-  addLabel: (label: Omit<Label, 'id' | 'createdAt'>) => void;
-  updateLabel: (id: string, updates: Partial<Label>) => void;
-  deleteLabel: (id: string) => void;
+  addLabel: (label: Omit<Label, 'id' | 'createdAt'>) => Promise<void>;
+  updateLabel: (id: string, updates: Partial<Label>) => Promise<void>;
+  deleteLabel: (id: string) => Promise<void>;
   getLabelById: (id: string) => Label | undefined;
 
-  // Tasks
-  addTask: (task: Omit<Task, 'id' | 'createdAt' | 'updatedAt' | 'completed' | 'reminders' | 'subtasks' | 'comments' | 'isRecurringParent' | 'labelIds'>) => void;
-  updateTask: (id: string, updates: Partial<Task>) => void;
-  deleteTask: (id: string) => void;
-  toggleTaskCompletion: (id: string) => void;
-  moveTask: (id: string, projectId: string, sectionId?: string) => void;
-  duplicateTask: (id: string) => void;
+  addTask: (task: Omit<Task, 'id' | 'createdAt' | 'updatedAt' | 'completed' | 'reminders' | 'subtasks' | 'comments' | 'isRecurringParent' | 'labelIds'>) => Promise<void>;
+  updateTask: (id: string, updates: Partial<Task>) => Promise<void>;
+  deleteTask: (id: string) => Promise<void>;
+  toggleTaskCompletion: (id: string) => Promise<void>;
+  moveTask: (id: string, projectId: string, sectionId?: string) => Promise<void>;
+  duplicateTask: (id: string) => Promise<void>;
   getTaskById: (id: string) => Task | undefined;
 
-  // Subtasks
-  addSubtask: (taskId: string, title: string) => void;
-  toggleSubtask: (taskId: string, subtaskId: string) => void;
-  deleteSubtask: (taskId: string, subtaskId: string) => void;
+  addSubtask: (taskId: string, title: string) => Promise<void>;
+  toggleSubtask: (taskId: string, subtaskId: string) => Promise<void>;
+  deleteSubtask: (taskId: string, subtaskId: string) => Promise<void>;
 
-  // Comments
-  addComment: (taskId: string, content: string) => void;
-  deleteComment: (taskId: string, commentId: string) => void;
+  addComment: (taskId: string, content: string) => Promise<void>;
+  deleteComment: (taskId: string, commentId: string) => Promise<void>;
 
-  // Filters
-  addFilter: (filter: Omit<Filter, 'id' | 'createdAt'>) => void;
-  updateFilter: (id: string, updates: Partial<Filter>) => void;
-  deleteFilter: (id: string) => void;
+  addFilter: (filter: Omit<Filter, 'id' | 'createdAt'>) => Promise<void>;
+  updateFilter: (id: string, updates: Partial<Filter>) => Promise<void>;
+  deleteFilter: (id: string) => Promise<void>;
 
-  // Reminders
-  addReminder: (taskId: string, reminder: Omit<Reminder, 'id' | 'taskId' | 'createdAt'>) => void;
-  deleteReminder: (taskId: string, reminderId: string) => void;
+  addReminder: (taskId: string, reminder: Omit<Reminder, 'id' | 'taskId' | 'createdAt'>) => Promise<void>;
+  deleteReminder: (taskId: string, reminderId: string) => Promise<void>;
 
-  // View State
   setViewState: (viewState: ViewState) => void;
   goToInbox: () => void;
   goToToday: () => void;
@@ -123,12 +89,10 @@ interface TaskStore {
   goToInsights: () => void;
   goToCompleted: () => void;
 
-  // Theme
   toggleTheme: () => void;
   setTheme: (theme: 'light' | 'dark') => void;
   setThemeColor: (color: string) => void;
 
-  // Queries
   getTasksForCurrentView: () => Task[];
   getTasksForToday: () => Task[];
   getTasksForUpcoming: () => Task[];
@@ -138,23 +102,15 @@ interface TaskStore {
   getTasksByFilter: (query: string) => Task[];
   searchTasks: (query: string) => Task[];
 
-  // Karma & Productivity
-  updateKarmaOnTaskCompletion: (task: Task) => void;
   getProductivityStats: () => ProductivityStats;
   checkDailyGoal: () => boolean;
   checkWeeklyGoal: () => boolean;
 
-  // Initialization
   loadFromStorage: () => void;
   migrateOldData: () => void;
 }
 
-// ============================================================================
-// STORE IMPLEMENTATION
-// ============================================================================
-
 export const useTaskStore = create<TaskStore>((set, get) => ({
-  // Initial state
   tasks: [],
   projects: [],
   labels: [],
@@ -168,188 +124,250 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
     weeklyGoal: 30,
     pointsHistory: [],
   },
-  viewState: {
-    type: ViewType.TODAY,
-  },
+  viewState: { type: ViewType.TODAY },
   theme: 'light',
-  themeColor: '#dc4c3e', // Default red color (Todoist-like)
+  themeColor: '#dc4c3e',
+  userId: null,
+  isLoading: false,
 
-  // ========================================================================
-  // PROJECTS
-  // ========================================================================
+  setUserId: (userId) => set({ userId }),
 
-  addProject: (projectData) => {
-    const newProject: Project = {
+  initializeStore: async () => {
+    const user = await getCurrentUser();
+    if (!user) throw new Error('User must be authenticated');
+
+    console.log('[Store] Initializing for user:', user.id);
+    set({ isLoading: true, userId: user.id });
+
+    try {
+      const data = await retryOperation(() => syncService.syncAllData(user.id));
+      console.log('[Store] Synced data:', {
+        tasks: data.tasks.length,
+        projects: data.projects.length,
+        labels: data.labels.length,
+        filters: data.filters.length,
+      });
+      set({
+        tasks: data.tasks as Task[],
+        projects: data.projects as Project[],
+        labels: data.labels,
+        filters: data.filters,
+        karma: data.karma || get().karma,
+        isLoading: false,
+      });
+      console.log('[Store] State updated with tasks:', get().tasks.length);
+      toast.success('Data synced successfully');
+    } catch (error: any) {
+      console.error('Failed to initialize store:', error);
+      toast.error('Failed to load data');
+      set({ isLoading: false });
+      throw error;
+    }
+  },
+
+  addProject: async (projectData) => {
+    const { userId } = get();
+    if (!userId) throw new Error('Not authenticated');
+
+    const tempId = crypto.randomUUID();
+    const optimisticProject: Project = {
       ...projectData,
-      id: crypto.randomUUID(),
+      id: tempId,
       createdAt: formatDate(new Date()),
       sections: [],
     };
 
-    set((state) => {
-      const updatedProjects = [...state.projects, newProject];
-      saveToStorage(STORAGE_KEYS.PROJECTS, updatedProjects);
-      return { projects: updatedProjects };
-    });
-  },
+    set((state) => ({ projects: [...state.projects, optimisticProject] }));
 
-  updateProject: (id, updates) => {
-    set((state) => {
-      const updatedProjects = state.projects.map((p) =>
-        p.id === id ? { ...p, ...updates } : p
+    try {
+      const newProject = await retryOperation(() =>
+        projectService.createProject({ ...projectData, user_id: userId, order: get().projects.length })
       );
-      saveToStorage(STORAGE_KEYS.PROJECTS, updatedProjects);
-      return { projects: updatedProjects };
-    });
+      set((state) => ({
+        projects: state.projects.map((p) =>
+          p.id === tempId ? { ...syncService.dbProjectToLocal(newProject), sections: [] } as Project : p
+        ),
+      }));
+      toast.success('Project created');
+    } catch (error: any) {
+      set((state) => ({ projects: state.projects.filter((p) => p.id !== tempId) }));
+      toast.error('Failed to create project');
+      throw error;
+    }
   },
 
-  deleteProject: (id) => {
-    set((state) => {
-      const updatedProjects = state.projects.filter((p) => p.id !== id);
-      const updatedTasks = state.tasks.filter((t) => t.projectId !== id);
-      saveToStorage(STORAGE_KEYS.PROJECTS, updatedProjects);
-      saveToStorage(STORAGE_KEYS.TASKS, updatedTasks);
-      return { projects: updatedProjects, tasks: updatedTasks };
-    });
+  updateProject: async (id, updates) => {
+    set((state) => ({ projects: state.projects.map((p) => (p.id === id ? { ...p, ...updates } : p)) }));
+    try {
+      await retryOperation(() => projectService.updateProject(id, updates));
+    } catch (error: any) {
+      toast.error('Failed to update project');
+      await get().initializeStore();
+    }
   },
 
-  reorderProjects: (projectIds) => {
-    set((state) => {
-      const projectMap = new Map(state.projects.map((p) => [p.id, p]));
-      const updatedProjects = projectIds
-        .map((id, index) => {
-          const project = projectMap.get(id);
-          return project ? { ...project, order: index } : null;
-        })
-        .filter((p): p is Project => p !== null);
-
-      saveToStorage(STORAGE_KEYS.PROJECTS, updatedProjects);
-      return { projects: updatedProjects };
-    });
+  deleteProject: async (id) => {
+    const backup = get().projects;
+    set((state) => ({
+      projects: state.projects.filter((p) => p.id !== id),
+      tasks: state.tasks.filter((t) => t.projectId !== id),
+    }));
+    try {
+      await retryOperation(() => projectService.deleteProject(id));
+      toast.success('Project deleted');
+    } catch (error: any) {
+      set({ projects: backup });
+      toast.error('Failed to delete project');
+    }
   },
 
-  getProjectById: (id) => {
-    return get().projects.find((p) => p.id === id);
+  reorderProjects: async (projectIds) => {
+    const backup = get().projects;
+    const projectMap = new Map(backup.map((p) => [p.id, p]));
+    const reordered = projectIds.map((id, index) => {
+      const project = projectMap.get(id);
+      return project ? { ...project, order: index } : null;
+    }).filter((p): p is Project => p !== null);
+
+    set({ projects: reordered });
+    try {
+      await retryOperation(() => projectService.reorderProjects(projectIds.map((id, index) => ({ id, order: index }))));
+    } catch (error: any) {
+      set({ projects: backup });
+      toast.error('Failed to reorder projects');
+    }
   },
 
-  // ========================================================================
-  // SECTIONS
-  // ========================================================================
+  getProjectById: (id) => get().projects.find((p) => p.id === id),
 
-  addSection: (projectId, name) => {
-    set((state) => {
-      const updatedProjects = state.projects.map((p) => {
-        if (p.id === projectId) {
-          const newSection: Section = {
-            id: crypto.randomUUID(),
-            projectId,
-            name,
-            order: p.sections.length,
-            createdAt: formatDate(new Date()),
-          };
-          return { ...p, sections: [...p.sections, newSection] };
-        }
-        return p;
-      });
-      saveToStorage(STORAGE_KEYS.PROJECTS, updatedProjects);
-      return { projects: updatedProjects };
-    });
-  },
+  addSection: async (projectId, name) => {
+    const { userId } = get();
+    if (!userId) throw new Error('Not authenticated');
+    const project = get().projects.find((p) => p.id === projectId);
+    if (!project) return;
 
-  updateSection: (projectId, sectionId, name) => {
-    set((state) => {
-      const updatedProjects = state.projects.map((p) => {
-        if (p.id === projectId) {
-          return {
-            ...p,
-            sections: p.sections.map((s) =>
-              s.id === sectionId ? { ...s, name } : s
-            ),
-          };
-        }
-        return p;
-      });
-      saveToStorage(STORAGE_KEYS.PROJECTS, updatedProjects);
-      return { projects: updatedProjects };
-    });
-  },
-
-  deleteSection: (projectId, sectionId) => {
-    set((state) => {
-      const updatedProjects = state.projects.map((p) => {
-        if (p.id === projectId) {
-          return {
-            ...p,
-            sections: p.sections.filter((s) => s.id !== sectionId),
-          };
-        }
-        return p;
-      });
-      // Move tasks from deleted section to project root
-      const updatedTasks = state.tasks.map((t) =>
-        t.sectionId === sectionId ? { ...t, sectionId: undefined } : t
-      );
-      saveToStorage(STORAGE_KEYS.PROJECTS, updatedProjects);
-      saveToStorage(STORAGE_KEYS.TASKS, updatedTasks);
-      return { projects: updatedProjects, tasks: updatedTasks };
-    });
-  },
-
-  // ========================================================================
-  // LABELS
-  // ========================================================================
-
-  addLabel: (labelData) => {
-    const newLabel: Label = {
-      ...labelData,
-      id: crypto.randomUUID(),
+    const tempId = crypto.randomUUID();
+    const optimisticSection: Section = {
+      id: tempId,
+      projectId,
+      name,
+      order: project.sections.length,
       createdAt: formatDate(new Date()),
     };
 
-    set((state) => {
-      const updatedLabels = [...state.labels, newLabel];
-      saveToStorage(STORAGE_KEYS.LABELS, updatedLabels);
-      return { labels: updatedLabels };
-    });
-  },
+    set((state) => ({
+      projects: state.projects.map((p) =>
+        p.id === projectId ? { ...p, sections: [...p.sections, optimisticSection] } : p
+      ),
+    }));
 
-  updateLabel: (id, updates) => {
-    set((state) => {
-      const updatedLabels = state.labels.map((l) =>
-        l.id === id ? { ...l, ...updates } : l
+    try {
+      const newSection = await retryOperation(() =>
+        projectService.createSection({ project_id: projectId, user_id: userId, name, order: project.sections.length })
       );
-      saveToStorage(STORAGE_KEYS.LABELS, updatedLabels);
-      return { labels: updatedLabels };
-    });
-  },
-
-  deleteLabel: (id) => {
-    set((state) => {
-      const updatedLabels = state.labels.filter((l) => l.id !== id);
-      // Remove label from all tasks
-      const updatedTasks = state.tasks.map((t) => ({
-        ...t,
-        labelIds: t.labelIds.filter((labelId) => labelId !== id),
+      set((state) => ({
+        projects: state.projects.map((p) =>
+          p.id === projectId
+            ? { ...p, sections: p.sections.map((s) => (s.id === tempId ? syncService.dbSectionToLocal(newSection) : s)) }
+            : p
+        ),
       }));
-      saveToStorage(STORAGE_KEYS.LABELS, updatedLabels);
-      saveToStorage(STORAGE_KEYS.TASKS, updatedTasks);
-      return { labels: updatedLabels, tasks: updatedTasks };
-    });
+    } catch (error: any) {
+      set((state) => ({
+        projects: state.projects.map((p) =>
+          p.id === projectId ? { ...p, sections: p.sections.filter((s) => s.id !== tempId) } : p
+        ),
+      }));
+      toast.error('Failed to create section');
+    }
   },
 
-  getLabelById: (id) => {
-    return get().labels.find((l) => l.id === id);
+  updateSection: async (projectId, sectionId, name) => {
+    set((state) => ({
+      projects: state.projects.map((p) =>
+        p.id === projectId
+          ? { ...p, sections: p.sections.map((s) => (s.id === sectionId ? { ...s, name } : s)) }
+          : p
+      ),
+    }));
+    try {
+      await retryOperation(() => projectService.updateSection(sectionId, { name }));
+    } catch (error: any) {
+      toast.error('Failed to update section');
+      await get().initializeStore();
+    }
   },
 
-  // ========================================================================
-  // TASKS
-  // ========================================================================
+  deleteSection: async (projectId, sectionId) => {
+    const backup = get().projects;
+    set((state) => ({
+      projects: state.projects.map((p) =>
+        p.id === projectId ? { ...p, sections: p.sections.filter((s) => s.id !== sectionId) } : p
+      ),
+      tasks: state.tasks.map((t) => (t.sectionId === sectionId ? { ...t, sectionId: undefined } : t)),
+    }));
+    try {
+      await retryOperation(() => projectService.deleteSection(sectionId));
+    } catch (error: any) {
+      set({ projects: backup });
+      toast.error('Failed to delete section');
+    }
+  },
 
-  addTask: (taskData) => {
+  addLabel: async (labelData) => {
+    const { userId } = get();
+    if (!userId) throw new Error('Not authenticated');
+
+    const tempId = crypto.randomUUID();
+    const optimisticLabel: Label = { ...labelData, id: tempId, createdAt: formatDate(new Date()) };
+    set((state) => ({ labels: [...state.labels, optimisticLabel] }));
+
+    try {
+      const newLabel = await retryOperation(() => labelService.createLabel({ ...labelData, user_id: userId }));
+      set((state) => ({ labels: state.labels.map((l) => (l.id === tempId ? syncService.dbLabelToLocal(newLabel) : l)) }));
+    } catch (error: any) {
+      set((state) => ({ labels: state.labels.filter((l) => l.id !== tempId) }));
+      toast.error('Failed to create label');
+    }
+  },
+
+  updateLabel: async (id, updates) => {
+    set((state) => ({ labels: state.labels.map((l) => (l.id === id ? { ...l, ...updates } : l)) }));
+    try {
+      await retryOperation(() => labelService.updateLabel(id, updates));
+    } catch (error: any) {
+      toast.error('Failed to update label');
+      await get().initializeStore();
+    }
+  },
+
+  deleteLabel: async (id) => {
+    const backup = { labels: get().labels, tasks: get().tasks };
+    set((state) => ({
+      labels: state.labels.filter((l) => l.id !== id),
+      tasks: state.tasks.map((t) => ({ ...t, labelIds: t.labelIds.filter((labelId) => labelId !== id) })),
+    }));
+    try {
+      await retryOperation(() => labelService.deleteLabel(id));
+    } catch (error: any) {
+      set(backup);
+      toast.error('Failed to delete label');
+    }
+  },
+
+  getLabelById: (id) => get().labels.find((l) => l.id === id),
+
+  addTask: async (taskData) => {
+    const { userId } = get();
+    if (!userId) throw new Error('Not authenticated');
+
+    console.log('[Store] Adding task for user:', userId, 'Task:', taskData);
+
     const now = new Date();
-    const newTask: Task = {
+    const tempId = crypto.randomUUID();
+    const optimisticTask: Task = {
       ...taskData,
-      id: crypto.randomUUID(),
+      id: tempId,
       createdAt: formatDate(now),
       updatedAt: formatDate(now),
       completed: false,
@@ -360,43 +378,72 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
       labelIds: [],
     };
 
-    set((state) => {
-      const updatedTasks = [...state.tasks, newTask];
-      saveToStorage(STORAGE_KEYS.TASKS, updatedTasks);
-      return { tasks: updatedTasks };
-    });
-  },
+    set((state) => ({ tasks: [...state.tasks, optimisticTask] }));
+    console.log('[Store] Optimistic task added, total tasks:', get().tasks.length);
 
-  updateTask: (id, updates) => {
-    set((state) => {
-      const updatedTasks = state.tasks.map((t) =>
-        t.id === id
-          ? { ...t, ...updates, updatedAt: formatDate(new Date()) }
-          : t
+    try {
+      const newTask = await retryOperation(() =>
+        taskService.createTask({
+          user_id: userId,
+          project_id: taskData.projectId,
+          section_id: taskData.sectionId || null,
+          title: taskData.title,
+          description: taskData.description || null,
+          priority: taskData.priority || 'p4',
+          due_date: taskData.dueDate || null,
+          recurrence: taskData.recurrence || null,
+          status: taskData.status || 'todo',
+          order: get().tasks.length,
+        })
       );
-      saveToStorage(STORAGE_KEYS.TASKS, updatedTasks);
-      return { tasks: updatedTasks };
-    });
+      console.log('[Store] Task created in DB:', newTask.id);
+      set((state) => ({
+        tasks: state.tasks.map((t) =>
+          t.id === tempId ? { ...syncService.dbTaskToLocal(newTask), reminders: [], subtasks: [], comments: [], labelIds: [] } : t
+        ),
+      }));
+      console.log('[Store] Task replaced with DB version, total tasks:', get().tasks.length);
+    } catch (error: any) {
+      console.error('[Store] Failed to create task:', error);
+      set((state) => ({ tasks: state.tasks.filter((t) => t.id !== tempId) }));
+      toast.error('Failed to create task');
+    }
   },
 
-  deleteTask: (id) => {
-    set((state) => {
-      const updatedTasks = state.tasks.filter((t) => t.id !== id);
-      saveToStorage(STORAGE_KEYS.TASKS, updatedTasks);
-      return { tasks: updatedTasks };
-    });
+  updateTask: async (id, updates) => {
+    set((state) => ({
+      tasks: state.tasks.map((t) => (t.id === id ? { ...t, ...updates, updatedAt: formatDate(new Date()) } : t)),
+    }));
+    try {
+      await retryOperation(() => taskService.updateTask(id, updates as any));
+    } catch (error: any) {
+      toast.error('Failed to update task');
+      await get().initializeStore();
+    }
   },
 
-  toggleTaskCompletion: (id) => {
-    set((state) => {
-      const task = state.tasks.find((t) => t.id === id);
-      if (!task) return state;
+  deleteTask: async (id) => {
+    const backup = get().tasks;
+    set((state) => ({ tasks: state.tasks.filter((t) => t.id !== id) }));
+    try {
+      await retryOperation(() => taskService.deleteTask(id));
+    } catch (error: any) {
+      set({ tasks: backup });
+      toast.error('Failed to delete task');
+    }
+  },
 
-      const now = new Date();
-      const newCompletedState = !task.completed;
+  toggleTaskCompletion: async (id) => {
+    const task = get().tasks.find((t) => t.id === id);
+    if (!task) return;
+    const { userId } = get();
+    if (!userId) throw new Error('Not authenticated');
 
-      // Mark current task as completed/uncompleted
-      let updatedTasks = state.tasks.map((t) =>
+    const now = new Date();
+    const newCompletedState = !task.completed;
+
+    set((state) => ({
+      tasks: state.tasks.map((t) =>
         t.id === id
           ? {
               ...t,
@@ -406,329 +453,353 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
               updatedAt: formatDate(now),
             }
           : t
-      );
+      ),
+    }));
 
-      // If completing a recurring task, create next occurrence
+    try {
+      await retryOperation(() => taskService.toggleTaskCompletion(id, newCompletedState));
+
+      if (newCompletedState) {
+        const karmaProfile = await karmaService.getKarmaProfile(userId);
+        if (karmaProfile) {
+          const updatedProfile = await retryOperation(() =>
+            karmaService.updateKarmaOnTaskCompletion(userId, KARMA_POINTS[task.priority], karmaProfile)
+          );
+          const karmaEvents = await karmaService.getKarmaEvents(userId, 50);
+          set({
+            karma: {
+              ...syncService.dbKarmaToLocal(updatedProfile),
+              pointsHistory: karmaEvents.map((e) => ({
+                date: e.date,
+                points: e.points,
+                tasksCompleted: e.tasks_completed,
+                reason: e.reason,
+              })),
+            },
+          });
+        }
+      }
+
       if (newCompletedState && task.recurrence) {
         const nextDate = getNextOccurrence(task.recurrence, task.dueDate ? parseDate(task.dueDate) : now);
-
         if (nextDate) {
-          const nextTask: Task = {
-            ...task,
-            id: crypto.randomUUID(),
-            completed: false,
-            completedAt: undefined,
-            status: TaskStatus.TODO,
-            dueDate: formatDate(nextDate),
-            createdAt: formatDate(now),
-            updatedAt: formatDate(now),
-          };
-
-          updatedTasks = [...updatedTasks, nextTask];
+          await get().addTask({ ...task, dueDate: formatDate(nextDate) });
         }
       }
-
-      saveToStorage(STORAGE_KEYS.TASKS, updatedTasks);
-
-      // Update karma if task was completed
-      if (newCompletedState) {
-        get().updateKarmaOnTaskCompletion(task);
-      }
-
-      return { tasks: updatedTasks };
-    });
+    } catch (error: any) {
+      set((state) => ({ tasks: state.tasks.map((t) => (t.id === id ? task : t)) }));
+      toast.error('Failed to update task');
+    }
   },
 
-  moveTask: (id, projectId, sectionId) => {
-    set((state) => {
-      const updatedTasks = state.tasks.map((t) =>
-        t.id === id
-          ? { ...t, projectId, sectionId, updatedAt: formatDate(new Date()) }
+  moveTask: async (id, projectId, sectionId) => {
+    const backup = get().tasks.find((t) => t.id === id);
+    set((state) => ({
+      tasks: state.tasks.map((t) =>
+        t.id === id ? { ...t, projectId, sectionId, updatedAt: formatDate(new Date()) } : t
+      ),
+    }));
+    try {
+      await retryOperation(() => taskService.moveTask(id, projectId, sectionId));
+    } catch (error: any) {
+      if (backup) {
+        set((state) => ({ tasks: state.tasks.map((t) => (t.id === id ? backup : t)) }));
+      }
+      toast.error('Failed to move task');
+    }
+  },
+
+  duplicateTask: async (id) => {
+    const task = get().tasks.find((t) => t.id === id);
+    if (!task) return;
+    await get().addTask({ ...task, title: `${task.title} (copy)` });
+  },
+
+  getTaskById: (id) => get().tasks.find((t) => t.id === id),
+
+  addSubtask: async (taskId, title) => {
+    const task = get().tasks.find((t) => t.id === taskId);
+    if (!task) return;
+
+    const tempId = crypto.randomUUID();
+    const optimisticSubtask: Subtask = { id: tempId, title, completed: false, order: task.subtasks.length };
+    set((state) => ({
+      tasks: state.tasks.map((t) =>
+        t.id === taskId ? { ...t, subtasks: [...t.subtasks, optimisticSubtask], updatedAt: formatDate(new Date()) } : t
+      ),
+    }));
+
+    try {
+      const newSubtask = await retryOperation(() => taskService.createSubtask(taskId, title, task.subtasks.length));
+      set((state) => ({
+        tasks: state.tasks.map((t) =>
+          t.id === taskId
+            ? {
+                ...t,
+                subtasks: t.subtasks.map((s) =>
+                  s.id === tempId
+                    ? { id: newSubtask.id, title: newSubtask.title, completed: newSubtask.completed, order: newSubtask.order }
+                    : s
+                ),
+              }
+            : t
+        ),
+      }));
+    } catch (error: any) {
+      set((state) => ({
+        tasks: state.tasks.map((t) =>
+          t.id === taskId ? { ...t, subtasks: t.subtasks.filter((s) => s.id !== tempId) } : t
+        ),
+      }));
+      toast.error('Failed to add subtask');
+    }
+  },
+
+  toggleSubtask: async (taskId, subtaskId) => {
+    const task = get().tasks.find((t) => t.id === taskId);
+    const subtask = task?.subtasks.find((s) => s.id === subtaskId);
+    if (!task || !subtask) return;
+
+    set((state) => ({
+      tasks: state.tasks.map((t) =>
+        t.id === taskId
+          ? {
+              ...t,
+              subtasks: t.subtasks.map((s) => (s.id === subtaskId ? { ...s, completed: !s.completed } : s)),
+              updatedAt: formatDate(new Date()),
+            }
           : t
+      ),
+    }));
+
+    try {
+      await retryOperation(() => taskService.toggleSubtask(subtaskId, !subtask.completed));
+    } catch (error: any) {
+      set((state) => ({ tasks: state.tasks.map((t) => (t.id === taskId ? task : t)) }));
+      toast.error('Failed to toggle subtask');
+    }
+  },
+
+  deleteSubtask: async (taskId, subtaskId) => {
+    const task = get().tasks.find((t) => t.id === taskId);
+    if (!task) return;
+
+    set((state) => ({
+      tasks: state.tasks.map((t) =>
+        t.id === taskId
+          ? { ...t, subtasks: t.subtasks.filter((s) => s.id !== subtaskId), updatedAt: formatDate(new Date()) }
+          : t
+      ),
+    }));
+
+    try {
+      await retryOperation(() => taskService.deleteSubtask(subtaskId));
+    } catch (error: any) {
+      set((state) => ({ tasks: state.tasks.map((t) => (t.id === taskId ? task : t)) }));
+      toast.error('Failed to delete subtask');
+    }
+  },
+
+  addComment: async (taskId, content) => {
+    const task = get().tasks.find((t) => t.id === taskId);
+    if (!task) return;
+
+    const tempId = crypto.randomUUID();
+    const optimisticComment: Comment = { id: tempId, content, createdAt: formatDate(new Date()) };
+    set((state) => ({
+      tasks: state.tasks.map((t) =>
+        t.id === taskId
+          ? { ...t, comments: [...t.comments, optimisticComment], updatedAt: formatDate(new Date()) }
+          : t
+      ),
+    }));
+
+    try {
+      const newComment = await retryOperation(() => taskService.createComment(taskId, content));
+      set((state) => ({
+        tasks: state.tasks.map((t) =>
+          t.id === taskId
+            ? {
+                ...t,
+                comments: t.comments.map((c) =>
+                  c.id === tempId ? { id: newComment.id, content: newComment.content, createdAt: newComment.created_at } : c
+                ),
+              }
+            : t
+        ),
+      }));
+    } catch (error: any) {
+      set((state) => ({
+        tasks: state.tasks.map((t) =>
+          t.id === taskId ? { ...t, comments: t.comments.filter((c) => c.id !== tempId) } : t
+        ),
+      }));
+      toast.error('Failed to add comment');
+    }
+  },
+
+  deleteComment: async (taskId, commentId) => {
+    const task = get().tasks.find((t) => t.id === taskId);
+    if (!task) return;
+
+    set((state) => ({
+      tasks: state.tasks.map((t) =>
+        t.id === taskId
+          ? { ...t, comments: t.comments.filter((c) => c.id !== commentId), updatedAt: formatDate(new Date()) }
+          : t
+      ),
+    }));
+
+    try {
+      await retryOperation(() => taskService.deleteComment(commentId));
+    } catch (error: any) {
+      set((state) => ({ tasks: state.tasks.map((t) => (t.id === taskId ? task : t)) }));
+      toast.error('Failed to delete comment');
+    }
+  },
+
+  addFilter: async (filterData) => {
+    const { userId } = get();
+    if (!userId) throw new Error('Not authenticated');
+
+    const tempId = crypto.randomUUID();
+    const optimisticFilter: Filter = { ...filterData, id: tempId, createdAt: formatDate(new Date()) };
+    set((state) => ({ filters: [...state.filters, optimisticFilter] }));
+
+    try {
+      const newFilter = await retryOperation(() => filterService.createFilter({ ...filterData, user_id: userId }));
+      set((state) => ({ filters: state.filters.map((f) => (f.id === tempId ? syncService.dbFilterToLocal(newFilter) : f)) }));
+    } catch (error: any) {
+      set((state) => ({ filters: state.filters.filter((f) => f.id !== tempId) }));
+      toast.error('Failed to create filter');
+    }
+  },
+
+  updateFilter: async (id, updates) => {
+    set((state) => ({ filters: state.filters.map((f) => (f.id === id ? { ...f, ...updates } : f)) }));
+    try {
+      await retryOperation(() => filterService.updateFilter(id, updates));
+    } catch (error: any) {
+      toast.error('Failed to update filter');
+      await get().initializeStore();
+    }
+  },
+
+  deleteFilter: async (id) => {
+    const backup = get().filters;
+    set((state) => ({ filters: state.filters.filter((f) => f.id !== id) }));
+    try {
+      await retryOperation(() => filterService.deleteFilter(id));
+    } catch (error: any) {
+      set({ filters: backup });
+      toast.error('Failed to delete filter');
+    }
+  },
+
+  addReminder: async (taskId, reminderData) => {
+    const task = get().tasks.find((t) => t.id === taskId);
+    if (!task) return;
+
+    const tempId = crypto.randomUUID();
+    const optimisticReminder: Reminder = { ...reminderData, id: tempId, taskId, createdAt: formatDate(new Date()) };
+    set((state) => ({
+      tasks: state.tasks.map((t) =>
+        t.id === taskId
+          ? { ...t, reminders: [...t.reminders, optimisticReminder], updatedAt: formatDate(new Date()) }
+          : t
+      ),
+    }));
+
+    try {
+      const newReminder = await retryOperation(() =>
+        taskService.createReminder(taskId, {
+          type: reminderData.type,
+          date_time: reminderData.dateTime || null,
+          relative_minutes: reminderData.relativeMinutes || null,
+        })
       );
-      saveToStorage(STORAGE_KEYS.TASKS, updatedTasks);
-      return { tasks: updatedTasks };
-    });
+      set((state) => ({
+        tasks: state.tasks.map((t) =>
+          t.id === taskId
+            ? {
+                ...t,
+                reminders: t.reminders.map((r) =>
+                  r.id === tempId
+                    ? {
+                        id: newReminder.id,
+                        taskId: newReminder.task_id,
+                        type: newReminder.type,
+                        dateTime: newReminder.date_time,
+                        relativeMinutes: newReminder.relative_minutes,
+                        isTriggered: newReminder.is_triggered,
+                        createdAt: newReminder.created_at,
+                      }
+                    : r
+                ),
+              }
+            : t
+        ),
+      }));
+    } catch (error: any) {
+      set((state) => ({
+        tasks: state.tasks.map((t) =>
+          t.id === taskId ? { ...t, reminders: t.reminders.filter((r) => r.id !== tempId) } : t
+        ),
+      }));
+      toast.error('Failed to add reminder');
+    }
   },
 
-  duplicateTask: (id) => {
-    set((state) => {
-      const task = state.tasks.find((t) => t.id === id);
-      if (!task) return state;
+  deleteReminder: async (taskId, reminderId) => {
+    const task = get().tasks.find((t) => t.id === taskId);
+    if (!task) return;
 
-      const now = new Date();
-      const duplicatedTask: Task = {
-        ...task,
-        id: crypto.randomUUID(),
-        title: `${task.title} (copy)`,
-        createdAt: formatDate(now),
-        updatedAt: formatDate(now),
-        completed: false,
-        completedAt: undefined,
-      };
+    set((state) => ({
+      tasks: state.tasks.map((t) =>
+        t.id === taskId
+          ? { ...t, reminders: t.reminders.filter((r) => r.id !== reminderId), updatedAt: formatDate(new Date()) }
+          : t
+      ),
+    }));
 
-      const updatedTasks = [...state.tasks, duplicatedTask];
-      saveToStorage(STORAGE_KEYS.TASKS, updatedTasks);
-      return { tasks: updatedTasks };
-    });
+    try {
+      await retryOperation(() => taskService.deleteReminder(reminderId));
+    } catch (error: any) {
+      set((state) => ({ tasks: state.tasks.map((t) => (t.id === taskId ? task : t)) }));
+      toast.error('Failed to delete reminder');
+    }
   },
-
-  getTaskById: (id) => {
-    return get().tasks.find((t) => t.id === id);
-  },
-
-  // ========================================================================
-  // SUBTASKS
-  // ========================================================================
-
-  addSubtask: (taskId, title) => {
-    set((state) => {
-      const updatedTasks = state.tasks.map((t) => {
-        if (t.id === taskId) {
-          const newSubtask: Subtask = {
-            id: crypto.randomUUID(),
-            title,
-            completed: false,
-            order: t.subtasks.length,
-          };
-          return {
-            ...t,
-            subtasks: [...t.subtasks, newSubtask],
-            updatedAt: formatDate(new Date()),
-          };
-        }
-        return t;
-      });
-      saveToStorage(STORAGE_KEYS.TASKS, updatedTasks);
-      return { tasks: updatedTasks };
-    });
-  },
-
-  toggleSubtask: (taskId, subtaskId) => {
-    set((state) => {
-      const updatedTasks = state.tasks.map((t) => {
-        if (t.id === taskId) {
-          return {
-            ...t,
-            subtasks: t.subtasks.map((s) =>
-              s.id === subtaskId ? { ...s, completed: !s.completed } : s
-            ),
-            updatedAt: formatDate(new Date()),
-          };
-        }
-        return t;
-      });
-      saveToStorage(STORAGE_KEYS.TASKS, updatedTasks);
-      return { tasks: updatedTasks };
-    });
-  },
-
-  deleteSubtask: (taskId, subtaskId) => {
-    set((state) => {
-      const updatedTasks = state.tasks.map((t) => {
-        if (t.id === taskId) {
-          return {
-            ...t,
-            subtasks: t.subtasks.filter((s) => s.id !== subtaskId),
-            updatedAt: formatDate(new Date()),
-          };
-        }
-        return t;
-      });
-      saveToStorage(STORAGE_KEYS.TASKS, updatedTasks);
-      return { tasks: updatedTasks };
-    });
-  },
-
-  // ========================================================================
-  // COMMENTS
-  // ========================================================================
-
-  addComment: (taskId, content) => {
-    set((state) => {
-      const updatedTasks = state.tasks.map((t) => {
-        if (t.id === taskId) {
-          const newComment: Comment = {
-            id: crypto.randomUUID(),
-            content,
-            createdAt: formatDate(new Date()),
-          };
-          return {
-            ...t,
-            comments: [...t.comments, newComment],
-            updatedAt: formatDate(new Date()),
-          };
-        }
-        return t;
-      });
-      saveToStorage(STORAGE_KEYS.TASKS, updatedTasks);
-      return { tasks: updatedTasks };
-    });
-  },
-
-  deleteComment: (taskId, commentId) => {
-    set((state) => {
-      const updatedTasks = state.tasks.map((t) => {
-        if (t.id === taskId) {
-          return {
-            ...t,
-            comments: t.comments.filter((c) => c.id !== commentId),
-            updatedAt: formatDate(new Date()),
-          };
-        }
-        return t;
-      });
-      saveToStorage(STORAGE_KEYS.TASKS, updatedTasks);
-      return { tasks: updatedTasks };
-    });
-  },
-
-  // ========================================================================
-  // FILTERS
-  // ========================================================================
-
-  addFilter: (filterData) => {
-    const newFilter: Filter = {
-      ...filterData,
-      id: crypto.randomUUID(),
-      createdAt: formatDate(new Date()),
-    };
-
-    set((state) => {
-      const updatedFilters = [...state.filters, newFilter];
-      saveToStorage(STORAGE_KEYS.FILTERS, updatedFilters);
-      return { filters: updatedFilters };
-    });
-  },
-
-  updateFilter: (id, updates) => {
-    set((state) => {
-      const updatedFilters = state.filters.map((f) =>
-        f.id === id ? { ...f, ...updates } : f
-      );
-      saveToStorage(STORAGE_KEYS.FILTERS, updatedFilters);
-      return { filters: updatedFilters };
-    });
-  },
-
-  deleteFilter: (id) => {
-    set((state) => {
-      const updatedFilters = state.filters.filter((f) => f.id !== id);
-      saveToStorage(STORAGE_KEYS.FILTERS, updatedFilters);
-      return { filters: updatedFilters };
-    });
-  },
-
-  // ========================================================================
-  // REMINDERS
-  // ========================================================================
-
-  addReminder: (taskId, reminderData) => {
-    set((state) => {
-      const updatedTasks = state.tasks.map((t) => {
-        if (t.id === taskId) {
-          const newReminder: Reminder = {
-            ...reminderData,
-            id: crypto.randomUUID(),
-            taskId,
-            createdAt: formatDate(new Date()),
-          };
-          return {
-            ...t,
-            reminders: [...t.reminders, newReminder],
-            updatedAt: formatDate(new Date()),
-          };
-        }
-        return t;
-      });
-      saveToStorage(STORAGE_KEYS.TASKS, updatedTasks);
-      return { tasks: updatedTasks };
-    });
-  },
-
-  deleteReminder: (taskId, reminderId) => {
-    set((state) => {
-      const updatedTasks = state.tasks.map((t) => {
-        if (t.id === taskId) {
-          return {
-            ...t,
-            reminders: t.reminders.filter((r) => r.id !== reminderId),
-            updatedAt: formatDate(new Date()),
-          };
-        }
-        return t;
-      });
-      saveToStorage(STORAGE_KEYS.TASKS, updatedTasks);
-      return { tasks: updatedTasks };
-    });
-  },
-
-  // ========================================================================
-  // VIEW STATE
-  // ========================================================================
 
   setViewState: (viewState) => {
     set({ viewState });
-    saveToStorage(STORAGE_KEYS.VIEW_STATE, viewState);
+    localStorage.setItem('todoist_view_state', JSON.stringify(viewState));
   },
 
-  goToInbox: () => {
-    get().setViewState({ type: ViewType.INBOX });
-  },
-
-  goToToday: () => {
-    get().setViewState({ type: ViewType.TODAY });
-  },
-
-  goToUpcoming: () => {
-    get().setViewState({ type: ViewType.UPCOMING });
-  },
-
-  goToProject: (projectId) => {
-    get().setViewState({ type: ViewType.PROJECT, projectId });
-  },
-
-  goToLabel: (labelId) => {
-    get().setViewState({ type: ViewType.LABEL, labelId });
-  },
-
-  goToFilter: (filterId) => {
-    get().setViewState({ type: ViewType.FILTER, filterId });
-  },
-
-  goToInsights: () => {
-    get().setViewState({ type: ViewType.INSIGHTS });
-  },
-
-  goToCompleted: () => {
-    get().setViewState({ type: ViewType.COMPLETED });
-  },
-
-  // ========================================================================
-  // THEME
-  // ========================================================================
+  goToInbox: () => get().setViewState({ type: ViewType.INBOX }),
+  goToToday: () => get().setViewState({ type: ViewType.TODAY }),
+  goToUpcoming: () => get().setViewState({ type: ViewType.UPCOMING }),
+  goToProject: (projectId) => get().setViewState({ type: ViewType.PROJECT, projectId }),
+  goToLabel: (labelId) => get().setViewState({ type: ViewType.LABEL, labelId }),
+  goToFilter: (filterId) => get().setViewState({ type: ViewType.FILTER, filterId }),
+  goToInsights: () => get().setViewState({ type: ViewType.INSIGHTS }),
+  goToCompleted: () => get().setViewState({ type: ViewType.COMPLETED }),
 
   toggleTheme: () => {
     set((state) => {
       const newTheme = state.theme === 'light' ? 'dark' : 'light';
-      saveToStorage(STORAGE_KEYS.THEME, newTheme);
-
-      // Apply theme to document
+      localStorage.setItem('todoist_theme', newTheme);
       if (newTheme === 'dark') {
         document.documentElement.classList.add('dark');
       } else {
         document.documentElement.classList.remove('dark');
       }
-
       return { theme: newTheme };
     });
   },
 
   setTheme: (theme) => {
     set({ theme });
-    saveToStorage(STORAGE_KEYS.THEME, theme);
-
-    // Apply theme to document
+    localStorage.setItem('todoist_theme', theme);
     if (theme === 'dark') {
       document.documentElement.classList.add('dark');
     } else {
@@ -738,43 +809,30 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
 
   setThemeColor: (color) => {
     set({ themeColor: color });
-    saveToStorage(STORAGE_KEYS.THEME_COLOR, color);
-
-    // Apply theme color to document as CSS variable
+    localStorage.setItem('todoist_theme_color', color);
     document.documentElement.style.setProperty('--theme-color', color);
   },
 
-  // ========================================================================
-  // QUERIES
-  // ========================================================================
-
   getTasksForCurrentView: () => {
-    const { viewState } = get();
-
+    const { viewState, tasks, filters } = get();
     switch (viewState.type) {
       case ViewType.INBOX:
-        return get().tasks.filter((t) => !t.completed && !t.dueDate);
+        return tasks.filter((t) => !t.completed && !t.dueDate);
       case ViewType.TODAY:
         return get().getTasksForToday();
       case ViewType.UPCOMING:
         return get().getTasksForUpcoming();
       case ViewType.PROJECT:
-        return viewState.projectId
-          ? get().getTasksByProject(viewState.projectId)
-          : [];
+        return viewState.projectId ? get().getTasksByProject(viewState.projectId) : [];
       case ViewType.LABEL:
-        return viewState.labelId
-          ? get().getTasksByLabel(viewState.labelId)
-          : [];
+        return viewState.labelId ? get().getTasksByLabel(viewState.labelId) : [];
       case ViewType.FILTER:
-        const filter = get().filters.find((f) => f.id === viewState.filterId);
+        const filter = filters.find((f) => f.id === viewState.filterId);
         return filter ? get().getTasksByFilter(filter.query) : [];
       case ViewType.COMPLETED:
-        return get().tasks.filter((t) => t.completed);
+        return tasks.filter((t) => t.completed);
       case ViewType.SEARCH:
-        return viewState.searchQuery
-          ? get().searchTasks(viewState.searchQuery)
-          : [];
+        return viewState.searchQuery ? get().searchTasks(viewState.searchQuery) : [];
       default:
         return [];
     }
@@ -795,7 +853,6 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
   getTasksForUpcoming: () => {
     const today = startOfDay(new Date());
     const weekFromNow = addDays(today, 7);
-
     return get()
       .tasks.filter((t) => {
         if (t.completed) return false;
@@ -839,31 +896,16 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
   },
 
   getTasksByFilter: (query) => {
-    // Enhanced filter query parser
-    // Format: "project:id & label:id & priority:p1 & due:today"
     let tasks = get().tasks.filter((t) => !t.completed);
-
-    // Parse query parts (split by &)
     const parts = query.split('&').map((p) => p.trim());
 
     parts.forEach((part) => {
       const [key, value] = part.split(':').map((s) => s.trim());
-
-      if (key === 'project' && value) {
-        tasks = tasks.filter((t) => t.projectId === value);
-      }
-
-      if (key === 'label' && value) {
-        tasks = tasks.filter((t) => t.labelIds.includes(value));
-      }
-
-      if (key === 'priority' && value) {
-        tasks = tasks.filter((t) => t.priority === value);
-      }
-
+      if (key === 'project' && value) tasks = tasks.filter((t) => t.projectId === value);
+      if (key === 'label' && value) tasks = tasks.filter((t) => t.labelIds.includes(value));
+      if (key === 'priority' && value) tasks = tasks.filter((t) => t.priority === value);
       if (key === 'due') {
         const today = startOfDay(new Date());
-
         if (value === 'today') {
           tasks = tasks.filter((t) => {
             if (!t.dueDate) return false;
@@ -900,65 +942,6 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
     );
   },
 
-  // ========================================================================
-  // KARMA & PRODUCTIVITY
-  // ========================================================================
-
-  updateKarmaOnTaskCompletion: (task) => {
-    set((state) => {
-      const points = KARMA_POINTS[task.priority];
-      const today = formatDate(new Date());
-      const { karma } = state;
-
-      // Check streak
-      let newStreak = karma.currentStreak;
-      if (karma.lastCompletionDate) {
-        const lastDate = parseDate(karma.lastCompletionDate);
-        const todayDate = parseDate(today);
-        const diffDays = Math.floor(
-          (todayDate.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24)
-        );
-
-        if (diffDays === 0) {
-          // Same day, keep streak
-        } else if (diffDays === 1) {
-          // Consecutive day, increment streak
-          newStreak += 1;
-        } else {
-          // Streak broken
-          newStreak = 1;
-        }
-      } else {
-        newStreak = 1;
-      }
-
-      const newTotalPoints = karma.totalPoints + points;
-      const newLevel =
-        KARMA_LEVELS.filter((l) => newTotalPoints >= l.pointsRequired).pop()
-          ?.level || 1;
-
-      const karmaEvent: KarmaEvent = {
-        date: today,
-        points,
-        tasksCompleted: 1,
-        reason: 'completed_task',
-      };
-
-      const updatedKarma: KarmaProfile = {
-        ...karma,
-        totalPoints: newTotalPoints,
-        level: newLevel,
-        currentStreak: newStreak,
-        longestStreak: Math.max(karma.longestStreak, newStreak),
-        lastCompletionDate: today,
-        pointsHistory: [...karma.pointsHistory, karmaEvent],
-      };
-
-      saveToStorage(STORAGE_KEYS.KARMA, updatedKarma);
-      return { karma: updatedKarma };
-    });
-  },
-
   getProductivityStats: () => {
     const { tasks } = get();
     const today = startOfDay(new Date());
@@ -966,16 +949,11 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
     const monthAgo = addDays(today, -30);
 
     const completedTasks = tasks.filter((t) => t.completed && t.completedAt);
-
-    const tasksCompletedToday = completedTasks.filter((t) =>
-      isToday(parseDate(t.completedAt!))
-    ).length;
-
+    const tasksCompletedToday = completedTasks.filter((t) => isToday(parseDate(t.completedAt!))).length;
     const tasksCompletedThisWeek = completedTasks.filter((t) => {
       const completedDate = parseDate(t.completedAt!);
       return completedDate >= weekAgo;
     }).length;
-
     const tasksCompletedThisMonth = completedTasks.filter((t) => {
       const completedDate = parseDate(t.completedAt!);
       return completedDate >= monthAgo;
@@ -986,16 +964,10 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
     const completionHeatmap: Record<string, number> = {};
 
     completedTasks.forEach((t) => {
-      // By project
-      completionsByProject[t.projectId] =
-        (completionsByProject[t.projectId] || 0) + 1;
-
-      // By label
+      completionsByProject[t.projectId] = (completionsByProject[t.projectId] || 0) + 1;
       t.labelIds.forEach((labelId) => {
         completionsByLabel[labelId] = (completionsByLabel[labelId] || 0) + 1;
       });
-
-      // Heatmap
       if (t.completedAt) {
         const date = t.completedAt.split('T')[0];
         completionHeatmap[date] = (completionHeatmap[date] || 0) + 1;
@@ -1009,9 +981,9 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
       completionsByProject,
       completionsByLabel,
       completionHeatmap,
-      mostProductiveDay: 'Monday', // TODO: Calculate from heatmap
-      mostProductiveTime: '10:00 AM', // TODO: Calculate from completion times
-      averageCompletionTime: 0, // TODO: Calculate based on time blocks
+      mostProductiveDay: 'Monday',
+      mostProductiveTime: '10:00 AM',
+      averageCompletionTime: 0,
     };
   },
 
@@ -1025,61 +997,11 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
     return stats.tasksCompletedThisWeek >= get().karma.weeklyGoal;
   },
 
-  // ========================================================================
-  // INITIALIZATION
-  // ========================================================================
-
   loadFromStorage: () => {
-    const tasks = loadFromStorage<Task[]>(STORAGE_KEYS.TASKS, []);
-    const projects = loadFromStorage<Project[]>(STORAGE_KEYS.PROJECTS, []);
-    const labels = loadFromStorage<Label[]>(STORAGE_KEYS.LABELS, []);
-    const filters = loadFromStorage<Filter[]>(STORAGE_KEYS.FILTERS, []);
-    const karma = loadFromStorage<KarmaProfile>(STORAGE_KEYS.KARMA, {
-      totalPoints: 0,
-      level: 1,
-      currentStreak: 0,
-      longestStreak: 0,
-      dailyGoal: 5,
-      weeklyGoal: 30,
-      pointsHistory: [],
-    });
-    const viewState = loadFromStorage<ViewState>(STORAGE_KEYS.VIEW_STATE, {
-      type: ViewType.TODAY,
-    });
-
-    // Load theme and apply to document
-    const savedTheme = loadFromStorage<'light' | 'dark'>(STORAGE_KEYS.THEME, 'light');
-    if (savedTheme === 'dark') {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-
-    // Load theme color and apply to document
-    const savedThemeColor = loadFromStorage<string>(STORAGE_KEYS.THEME_COLOR, '#dc4c3e');
-    document.documentElement.style.setProperty('--theme-color', savedThemeColor);
-
-    set({ tasks, projects, labels, filters, karma, viewState, theme: savedTheme, themeColor: savedThemeColor });
-
-    // If no projects exist, run migration
-    if (projects.length === 0) {
-      get().migrateOldData();
-    }
+    console.warn('loadFromStorage is deprecated, use initializeStore instead');
   },
 
   migrateOldData: () => {
-    // Check for old data format (categories)
-    const oldTasks = loadFromStorage<any[]>('tasks', []);
-
-    if (oldTasks.length === 0) {
-      // No old data, start with empty projects
-      set({ projects: [] });
-      saveToStorage(STORAGE_KEYS.PROJECTS, []);
-      return;
-    }
-
-    // Migrate old tasks to new format
-    console.log('Migrating old data...');
-    // Migration logic will be implemented in Phase 1.3
+    console.warn('migrateOldData is not implemented');
   },
 }));

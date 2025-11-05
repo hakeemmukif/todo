@@ -30,22 +30,29 @@ export const formatDueDate = (dueDate?: string, dueTime?: string): string => {
     dateStr = 'Today';
   } else if (dateOnly.getTime() === tomorrowOnly.getTime()) {
     dateStr = 'Tomorrow';
-  } else if (dateOnly.getTime() === yesterdayOnly.getTime()) {
-    dateStr = 'Yesterday';
   } else {
-    // Format as "Mon 15 Jan" or "Mon 15 Jan 2025" if not current year
+    // Calculate if date is within current week (before next Sunday)
+    const currentWeekEnd = new Date(today);
+    currentWeekEnd.setDate(today.getDate() + (7 - today.getDay())); // Next Sunday
+    currentWeekEnd.setHours(23, 59, 59, 999);
+
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
-    const dayName = days[date.getDay()];
-    const day = date.getDate();
-    const month = months[date.getMonth()];
-    const year = date.getFullYear();
-
-    if (year === today.getFullYear()) {
-      dateStr = `${dayName} ${day} ${month}`;
+    // If within current week, show just the day name (e.g., "Friday")
+    if (date <= currentWeekEnd && date > today) {
+      dateStr = days[date.getDay()];
     } else {
-      dateStr = `${dayName} ${day} ${month} ${year}`;
+      // Otherwise show date format (e.g., "7 Nov" or "7 Nov 2026" if different year)
+      const day = date.getDate();
+      const month = months[date.getMonth()];
+      const year = date.getFullYear();
+
+      if (year === today.getFullYear()) {
+        dateStr = `${day} ${month}`;
+      } else {
+        dateStr = `${day} ${month} ${year}`;
+      }
     }
   }
 
@@ -131,8 +138,8 @@ export const getDateUrgencyColor = (urgency: DateUrgency | null): string => {
     case 'tomorrow':
       return 'text-orange-600 dark:text-orange-500';
     case 'upcoming':
-      return 'text-minimal-text dark:text-[#FAFAFA] opacity-60';
+      return 'text-purple-600 dark:text-purple-500'; // Purple/blue like Todoist
     default:
-      return 'text-minimal-text dark:text-[#FAFAFA] opacity-60';
+      return 'text-purple-600 dark:text-purple-500';
   }
 };

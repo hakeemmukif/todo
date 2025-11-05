@@ -6,7 +6,8 @@ import { LabelModal } from './LabelModal';
 import { FilterModal } from './FilterModal';
 import { EnhancedTaskForm } from './EnhancedTaskForm';
 import { SettingsModal } from './SettingsModal';
-import { Inbox, Calendar, CalendarDays, BarChart3, Check, Sun, Moon, Plus, Settings } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
+import { Inbox, Calendar, CalendarDays, BarChart3, Check, Sun, Moon, Plus, Settings, LogOut } from 'lucide-react';
 
 export const Sidebar = () => {
   const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
@@ -15,6 +16,8 @@ export const Sidebar = () => {
   const [isTaskFormOpen, setIsTaskFormOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
+
+  const { user, signOut } = useAuth();
 
   const {
     projects,
@@ -295,6 +298,22 @@ export const Sidebar = () => {
         >
           [+ Add Filter]
         </button>
+
+        {/* User Info and Logout */}
+        {user && (
+          <div className="mt-4 pt-4 border-t border-minimal-border dark:border-[#2A2A2A]">
+            <div className="px-3 py-2 text-xs opacity-60 text-minimal-text dark:text-[#FAFAFA] truncate">
+              {user.email}
+            </div>
+            <button
+              onClick={signOut}
+              className="w-full flex items-center gap-2 px-3 py-2 text-xs opacity-60 hover:opacity-100 transition-opacity text-minimal-text dark:text-[#FAFAFA]"
+            >
+              <LogOut className="w-3 h-3" />
+              <span>Logout</span>
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Modals */}

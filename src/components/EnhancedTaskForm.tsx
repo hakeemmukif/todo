@@ -1,42 +1,40 @@
 import { useState, useEffect } from 'react';
 import { useTaskStore } from '../store/taskStore';
-import { Priority, TaskStatus, PRIORITY_ICONS, Reminder } from '../types/task';
-import { parseNaturalDate, parseRecurrence, formatDateForDisplay } from '../utils/naturalLanguage';
-import { formatDate } from '../utils/dateUtils';
-import { calculateReminderDatetime } from '../utils/reminderScheduler';
+import { Priority, TaskStatus } from '../types/task';
+import { TitleInput } from './forms/TitleInput';
+import { DescriptionInput } from './forms/DescriptionInput';
+import { DateInput } from './forms/DateInput';
+import { ProjectSelector } from './forms/ProjectSelector';
+import { PriorityDropdown } from './forms/PriorityDropdown';
+import { LabelSelector } from './forms/LabelSelector';
+import { ReminderManager } from './forms/ReminderManager';
+import { useDateInput } from '../hooks/useDateInput';
+import { useReminderInput } from '../hooks/useReminderInput';
+import { formatDateForDisplay } from '../utils/naturalLanguage';
 
 interface EnhancedTaskFormProps {
   isOpen: boolean;
   onClose: () => void;
-  taskId?: string; // If provided, we're editing
-}
-
-interface ReminderInput {
-  type: 'absolute' | 'relative';
-  absoluteDatetimeInput: string;
-  relativeDays: number;
+  taskId?: string;
 }
 
 export const EnhancedTaskForm = ({ isOpen, onClose, taskId }: EnhancedTaskFormProps) => {
-  const { tasks, projects, labels, addTask, updateTask, addReminder, deleteReminder } = useTaskStore();
-
+  const { tasks, projects, labels, addTask, updateTask } = useTaskStore();
   const existingTask = taskId ? tasks.find((t) => t.id === taskId) : null;
 
+  // Core fields (always visible)
   const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [dueDateInput, setDueDateInput] = useState('');
-  const [parsedDueDate, setParsedDueDate] = useState<Date | null>(null);
   const [projectId, setProjectId] = useState('');
+
+  // Date management with custom hook
+  const dateInput = useDateInput(existingTask?.dueDate);
+
+  // Advanced fields (in "More options")
+  const [showMoreOptions, setShowMoreOptions] = useState(false);
+  const [description, setDescription] = useState('');
   const [priority, setPriority] = useState(Priority.P4);
   const [selectedLabels, setSelectedLabels] = useState<string[]>([]);
-  const [recurrenceInput, setRecurrenceInput] = useState('');
-  const [parsedRecurrence, setParsedRecurrence] = useState<any>(null);
-  const [reminderInput, setReminderInput] = useState<ReminderInput>({
-    type: 'relative',
-    absoluteDatetimeInput: '',
-    relativeDays: 1,
-  });
-  const [tempReminders, setTempReminders] = useState<Reminder[]>([]);
+  const reminderInput = useReminderInput();
 
   // Load existing task data when editing
   useEffect(() => {
@@ -48,97 +46,48 @@ export const EnhancedTaskForm = ({ isOpen, onClose, taskId }: EnhancedTaskFormPr
       setSelectedLabels(existingTask.labelIds || []);
 
       if (existingTask.dueDate) {
-        setDueDateInput(existingTask.dueDate);
-        // Try to parse the stored date
-        try {
-          const date = new Date(existingTask.dueDate);
-          setParsedDueDate(date);
-        } catch (e) {
-          setParsedDueDate(null);
-        }
+        // Convert ISO date to human-readable format like "Today", "Tomorrow", "Friday"
+        const date = new Date(existingTask.dueDate);
+        dateInput.setInput(formatDateForDisplay(date));
       }
 
-      if (existingTask.recurrence) {
-        setRecurrenceInput(existingTask.recurrence.naturalLanguage);
-        setParsedRecurrence(existingTask.recurrence);
+      // Auto-expand "More options" if task has advanced fields set
+      if (
+        existingTask.description ||
+        (existingTask.labelIds && existingTask.labelIds.length > 0)
+      ) {
+        setShowMoreOptions(true);
       }
-
-      setTempReminders(existingTask.reminders || []);
     } else {
       // Reset for new task
       setTitle('');
       setDescription('');
-      setDueDateInput('');
-      setParsedDueDate(null);
-      setProjectId(projects[0]?.id || '');
+      // Default to first project, or 'inbox' if no projects
+      setProjectId(projects[0]?.id || 'inbox');
       setPriority(Priority.P4);
       setSelectedLabels([]);
-      setRecurrenceInput('');
-      setParsedRecurrence(null);
-      setTempReminders([]);
+      dateInput.clearDate();
+      reminderInput.reset();
+      setShowMoreOptions(false);
     }
   }, [existingTask, isOpen, projects]);
 
-  // Parse due date as user types
-  useEffect(() => {
-    if (dueDateInput.trim()) {
-      const date = parseNaturalDate(dueDateInput.trim());
-      setParsedDueDate(date);
-    } else {
-      setParsedDueDate(null);
+  // Keyboard shortcuts
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    // Cmd/Ctrl + Enter: Submit
+    if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+      e.preventDefault();
+      handleSubmit(e as any);
     }
-  }, [dueDateInput]);
-
-  // Parse recurrence as user types
-  useEffect(() => {
-    if (recurrenceInput.trim()) {
-      const pattern = parseRecurrence(recurrenceInput.trim());
-      setParsedRecurrence(pattern);
-    } else {
-      setParsedRecurrence(null);
+    // Escape: Close
+    else if (e.key === 'Escape') {
+      onClose();
     }
-  }, [recurrenceInput]);
-
-  const handleLabelToggle = (labelId: string) => {
-    setSelectedLabels((prev) =>
-      prev.includes(labelId)
-        ? prev.filter((id) => id !== labelId)
-        : [...prev, labelId]
-    );
-  };
-
-  const handleAddReminder = () => {
-    const datetime = calculateReminderDatetime(
-      reminderInput.type,
-      reminderInput.absoluteDatetimeInput || null,
-      reminderInput.relativeDays,
-      parsedDueDate ? formatDate(parsedDueDate) : null
-    );
-
-    if (datetime) {
-      const newReminder: Reminder = {
-        id: crypto.randomUUID(),
-        taskId: taskId || 'temp',
-        datetime,
-        type: reminderInput.type,
-        relativeDays: reminderInput.type === 'relative' ? reminderInput.relativeDays : undefined,
-        isRecurring: false,
-        createdAt: new Date().toISOString(),
-      };
-
-      setTempReminders([...tempReminders, newReminder]);
-
-      // Reset reminder input
-      setReminderInput({
-        type: 'relative',
-        absoluteDatetimeInput: '',
-        relativeDays: 1,
-      });
+    // Cmd/Ctrl + M: Toggle more options
+    else if ((e.metaKey || e.ctrlKey) && e.key === 'm') {
+      e.preventDefault();
+      setShowMoreOptions(!showMoreOptions);
     }
-  };
-
-  const handleDeleteReminder = (reminderId: string) => {
-    setTempReminders(tempReminders.filter((r) => r.id !== reminderId));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -146,36 +95,25 @@ export const EnhancedTaskForm = ({ isOpen, onClose, taskId }: EnhancedTaskFormPr
 
     if (!title.trim() || !projectId) return;
 
+    // Use first project if 'inbox' is selected but no actual inbox project exists
+    const finalProjectId = projectId === 'inbox' && !projects.some(p => p.id === 'inbox')
+      ? projects[0]?.id || projectId
+      : projectId;
+
     const taskData = {
       title: title.trim(),
       description: description.trim() || undefined,
-      projectId,
+      projectId: finalProjectId,
       status: TaskStatus.TODO,
       priority,
-      labelIds: selectedLabels.length > 0 ? selectedLabels : [],
-      dueDate: parsedDueDate ? formatDate(parsedDueDate) : undefined,
-      recurrence: parsedRecurrence || undefined,
+      labelIds: selectedLabels,
+      dueDate: dateInput.formattedDate,
     };
 
     if (taskId) {
       updateTask(taskId, taskData);
-
-      // Update reminders for existing task
-      // Remove old reminders and add new ones
-      const existingReminderIds = existingTask?.reminders.map((r) => r.id) || [];
-      existingReminderIds.forEach((id) => deleteReminder(taskId, id));
-      tempReminders.forEach((reminder) => {
-        addReminder(taskId, {
-          datetime: reminder.datetime,
-          type: reminder.type,
-          relativeDays: reminder.relativeDays,
-          isRecurring: reminder.isRecurring,
-        });
-      });
     } else {
       addTask(taskData);
-      // For new tasks, reminders will be added after task is created
-      // This is a limitation - we'd need to get the new task ID back from addTask
     }
 
     onClose();
@@ -183,259 +121,143 @@ export const EnhancedTaskForm = ({ isOpen, onClose, taskId }: EnhancedTaskFormPr
 
   if (!isOpen) return null;
 
+  // Count active advanced options for badge (only collapsed options)
+  const activeOptions = [
+    description ? 'Description' : null,
+    selectedLabels.length > 0 ? `${selectedLabels.length} labels` : null,
+    reminderInput.hasReminder ? 'Reminder' : null,
+  ].filter(Boolean);
+
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-30 dark:bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-minimal-bg dark:bg-[#0A0A0A] border border-minimal-border dark:border-[#2A2A2A] w-full max-w-2xl p-5">
-        <h2 className="text-lg font-medium mb-4 text-minimal-text dark:text-[#FAFAFA]">
-          {taskId ? 'Edit Task' : 'Add Task'}
-        </h2>
+    <div
+      className="fixed inset-0 bg-black bg-opacity-30 dark:bg-opacity-50 flex items-center justify-center z-50 p-4"
+      onClick={onClose}
+    >
+      <div
+        className="bg-minimal-bg dark:bg-[#0A0A0A] border border-minimal-border dark:border-[#2A2A2A]
+                   w-full max-w-lg p-4 shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+        onKeyDown={handleKeyDown}
+      >
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-base font-medium text-minimal-text dark:text-[#FAFAFA]">
+            {taskId ? 'Edit Task' : 'Quick Add'}
+          </h2>
+          <button
+            onClick={onClose}
+            className="opacity-60 hover:opacity-100 text-minimal-text dark:text-[#FAFAFA] text-xl leading-none"
+            aria-label="Close"
+          >
+            ×
+          </button>
+        </div>
 
         <form onSubmit={handleSubmit}>
-          {/* Task Title */}
-          <div className="mb-3">
-            <label className="block text-xs opacity-60 mb-2 text-minimal-text dark:text-[#FAFAFA]">Title*</label>
-            <input
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Task name"
-              className="w-full px-3 py-2 border border-minimal-border dark:border-[#2A2A2A] focus:outline-none focus:border-minimal-text dark:focus:border-[#FAFAFA] bg-transparent text-sm text-minimal-text dark:text-[#FAFAFA]"
-              autoFocus
-            />
-          </div>
+          {/* Core Fields - Always Visible */}
+          <TitleInput
+            value={title}
+            onChange={setTitle}
+            error={!title.trim() ? undefined : undefined}
+          />
 
-          {/* Description */}
-          <div className="mb-3">
-            <label className="block text-xs opacity-60 mb-2 text-minimal-text dark:text-[#FAFAFA]">Description</label>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Add details..."
-              rows={2}
-              className="w-full px-3 py-2 border border-minimal-border dark:border-[#2A2A2A] focus:outline-none focus:border-minimal-text dark:focus:border-[#FAFAFA] bg-transparent text-sm resize-none text-minimal-text dark:text-[#FAFAFA]"
-            />
-          </div>
-
-          {/* Due Date with NLP */}
-          <div className="mb-3">
-            <label className="block text-xs opacity-60 mb-2 text-minimal-text dark:text-[#FAFAFA]">
-              Due Date
-              {parsedDueDate && (
-                <span className="ml-2 text-minimal-text dark:text-[#FAFAFA]">
-                  → {formatDateForDisplay(parsedDueDate)}
-                </span>
-              )}
-            </label>
-            <input
-              type="text"
-              value={dueDateInput}
-              onChange={(e) => setDueDateInput(e.target.value)}
-              placeholder="Today, tomorrow, next Monday, in 3 days..."
-              className="w-full px-3 py-2 border border-minimal-border dark:border-[#2A2A2A] focus:outline-none focus:border-minimal-text dark:focus:border-[#FAFAFA] bg-transparent text-sm text-minimal-text dark:text-[#FAFAFA]"
-            />
-            <div className="mt-1 text-xs opacity-40 text-minimal-text dark:text-[#FAFAFA]">
-              Examples: today, tomorrow, next Friday, in 2 weeks, 2024-12-25
+          <div className="flex gap-2 mb-2">
+            {/* Due Date - 40% width */}
+            <div className="flex-[4]">
+              <DateInput
+                value={dateInput.input}
+                parsedDate={dateInput.parsedDate}
+                onChange={dateInput.setInput}
+                onDateSelect={dateInput.handleDateSelect}
+              />
             </div>
-          </div>
 
-          {/* Recurrence with NLP */}
-          <div className="mb-3">
-            <label className="block text-xs opacity-60 mb-2 text-minimal-text dark:text-[#FAFAFA]">
-              Recurrence
-              {parsedRecurrence && (
-                <span className="ml-2 text-minimal-text dark:text-[#FAFAFA]">
-                  ✓ pattern recognized
-                </span>
-              )}
-            </label>
-            <input
-              type="text"
-              value={recurrenceInput}
-              onChange={(e) => setRecurrenceInput(e.target.value)}
-              placeholder="Every day, every weekday, every 2 weeks..."
-              className="w-full px-3 py-2 border border-minimal-border dark:border-[#2A2A2A] focus:outline-none focus:border-minimal-text dark:focus:border-[#FAFAFA] bg-transparent text-sm text-minimal-text dark:text-[#FAFAFA]"
-            />
-            <div className="mt-1 text-xs opacity-40 text-minimal-text dark:text-[#FAFAFA]">
-              Examples: every day, every weekday, every Monday, every 2 weeks
-            </div>
-          </div>
-
-          {/* Project Selector */}
-          <div className="mb-3">
-            <label className="block text-xs opacity-60 mb-2 text-minimal-text dark:text-[#FAFAFA]">Project*</label>
-            <select
-              value={projectId}
-              onChange={(e) => setProjectId(e.target.value)}
-              className="w-full px-3 py-2 border border-minimal-border dark:border-[#2A2A2A] focus:outline-none focus:border-minimal-text dark:focus:border-[#FAFAFA] bg-minimal-bg dark:bg-[#0A0A0A] text-sm text-minimal-text dark:text-[#FAFAFA] appearance-none cursor-pointer"
-              style={{
-                backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23999' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
-                backgroundRepeat: 'no-repeat',
-                backgroundPosition: 'right 0.75rem center',
-                paddingRight: '2.5rem'
-              }}
-            >
-              {projects.filter(p => !p.isArchived).map((project) => (
-                <option key={project.id} value={project.id}>
-                  {project.icon} {project.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Priority Selector */}
-          <div className="mb-3">
-            <label className="block text-xs opacity-60 mb-2 text-minimal-text dark:text-[#FAFAFA]">Priority</label>
-            <div className="flex gap-2">
-              {[Priority.P1, Priority.P2, Priority.P3, Priority.P4].map((p) => (
-                <button
-                  key={p}
-                  type="button"
-                  onClick={() => setPriority(p)}
-                  className={`flex-1 px-3 py-2 border text-sm transition-all text-minimal-text dark:text-[#FAFAFA] ${
-                    priority === p
-                      ? 'border-minimal-text dark:border-[#FAFAFA] bg-minimal-hover dark:bg-[#1A1A1A]'
-                      : 'border-minimal-border dark:border-[#2A2A2A] hover:bg-minimal-hover dark:hover:bg-[#1A1A1A]'
-                  }`}
-                >
-                  {PRIORITY_ICONS[p]} {p.toUpperCase()}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Labels Selector */}
-          {labels.length > 0 && (
-            <div className="mb-3">
+            {/* Project - 30% width */}
+            <div className="flex-[3]">
               <label className="block text-xs opacity-60 mb-2 text-minimal-text dark:text-[#FAFAFA]">
-                labels ({selectedLabels.length} selected)
+                Project *
               </label>
-              <div className="flex flex-wrap gap-2">
-                {labels.map((label) => (
-                  <button
-                    key={label.id}
-                    type="button"
-                    onClick={() => handleLabelToggle(label.id)}
-                    className={`px-3 py-1 text-xs border transition-all text-minimal-text dark:text-[#FAFAFA] ${
-                      selectedLabels.includes(label.id)
-                        ? 'border-minimal-text dark:border-[#FAFAFA] bg-minimal-hover dark:bg-[#1A1A1A]'
-                        : 'border-minimal-border dark:border-[#2A2A2A] hover:bg-minimal-hover dark:hover:bg-[#1A1A1A]'
-                    }`}
-                    style={{
-                      borderLeftColor: label.color,
-                      borderLeftWidth: '3px',
-                    }}
-                  >
-                    @{label.name}
-                  </button>
-                ))}
-              </div>
+              <ProjectSelector
+                value={projectId}
+                onChange={setProjectId}
+                projects={projects}
+                showLabel={false}
+              />
+            </div>
+
+            {/* Priority - 30% width */}
+            <div className="flex-[3]">
+              <label className="block text-xs opacity-60 mb-2 text-minimal-text dark:text-[#FAFAFA]">
+                Priority
+              </label>
+              <PriorityDropdown
+                value={priority}
+                onChange={setPriority}
+                showLabel={false}
+              />
+            </div>
+          </div>
+
+          {/* More Options Toggle */}
+          <button
+            type="button"
+            onClick={() => setShowMoreOptions(!showMoreOptions)}
+            className="w-full text-left text-sm opacity-60 hover:opacity-100 py-2 flex items-center gap-2
+                       text-minimal-text dark:text-[#FAFAFA] transition-opacity"
+          >
+            <span>{showMoreOptions ? '⋮' : '⋯'}</span>
+            <span>More options</span>
+            {activeOptions.length > 0 && !showMoreOptions && (
+              <span className="ml-auto text-xs opacity-60">
+                {activeOptions.join(' • ')}
+              </span>
+            )}
+          </button>
+
+          {/* Advanced Options - Collapsible */}
+          {showMoreOptions && (
+            <div className="mb-3 pb-3 border-t border-b border-minimal-border dark:border-[#2A2A2A] pt-3 space-y-3">
+              <DescriptionInput value={description} onChange={setDescription} />
+
+              <ReminderManager
+                value={reminderInput.preset}
+                onChange={reminderInput.setPreset}
+                dueDateSet={!!dateInput.parsedDate}
+              />
+
+              <LabelSelector
+                selectedLabels={selectedLabels}
+                onChange={setSelectedLabels}
+                labels={labels}
+              />
             </div>
           )}
 
-          {/* Reminders */}
-          <div className="mb-3">
-            <label className="block text-xs opacity-60 mb-2 text-minimal-text dark:text-[#FAFAFA]">
-              Reminders ({tempReminders.length})
-            </label>
-
-            {/* Existing Reminders */}
-            {tempReminders.length > 0 && (
-              <div className="mb-3 space-y-2">
-                {tempReminders.map((reminder) => (
-                  <div
-                    key={reminder.id}
-                    className="flex items-center justify-between px-3 py-2 border border-minimal-border dark:border-[#2A2A2A] text-xs text-minimal-text dark:text-[#FAFAFA]"
-                  >
-                    <span>
-                      {reminder.type === 'relative'
-                        ? `${reminder.relativeDays} day${reminder.relativeDays !== 1 ? 's' : ''} before due date`
-                        : new Date(reminder.datetime).toLocaleString()}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => handleDeleteReminder(reminder.id)}
-                      className="text-xs opacity-60 hover:opacity-100 text-minimal-text dark:text-[#FAFAFA]"
-                    >
-                      remove
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Add Reminder */}
-            <div className="flex gap-2 items-end">
-              <div className="flex-1">
-                <select
-                  value={reminderInput.type}
-                  onChange={(e) =>
-                    setReminderInput({ ...reminderInput, type: e.target.value as 'absolute' | 'relative' })
-                  }
-                  className="w-full px-3 py-2 border border-minimal-border dark:border-[#2A2A2A] focus:outline-none focus:border-minimal-text dark:focus:border-[#FAFAFA] bg-minimal-bg dark:bg-[#0A0A0A] text-sm mb-2 text-minimal-text dark:text-[#FAFAFA] appearance-none cursor-pointer"
-                  style={{
-                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23999' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
-                    backgroundRepeat: 'no-repeat',
-                    backgroundPosition: 'right 0.75rem center',
-                    paddingRight: '2.5rem'
-                  }}
-                >
-                  <option value="relative">Relative (Days Before Due Date)</option>
-                  <option value="absolute">Absolute (Specific Date/Time)</option>
-                </select>
-
-                {reminderInput.type === 'relative' ? (
-                  <input
-                    type="number"
-                    min="0"
-                    value={reminderInput.relativeDays}
-                    onChange={(e) =>
-                      setReminderInput({ ...reminderInput, relativeDays: parseInt(e.target.value, 10) })
-                    }
-                    placeholder="days before"
-                    className="w-full px-3 py-2 border border-minimal-border dark:border-[#2A2A2A] focus:outline-none focus:border-minimal-text dark:focus:border-[#FAFAFA] bg-transparent text-sm text-minimal-text dark:text-[#FAFAFA]"
-                  />
-                ) : (
-                  <input
-                    type="datetime-local"
-                    value={reminderInput.absoluteDatetimeInput}
-                    onChange={(e) =>
-                      setReminderInput({ ...reminderInput, absoluteDatetimeInput: e.target.value })
-                    }
-                    className="w-full px-3 py-2 border border-minimal-border dark:border-[#2A2A2A] focus:outline-none focus:border-minimal-text dark:focus:border-[#FAFAFA] bg-transparent text-sm text-minimal-text dark:text-[#FAFAFA]"
-                  />
-                )}
-              </div>
-              <button
-                type="button"
-                onClick={handleAddReminder}
-                className="px-4 py-2 text-sm border border-minimal-border dark:border-[#2A2A2A] hover:bg-minimal-hover dark:hover:bg-[#1A1A1A] transition-colors text-minimal-text dark:text-[#FAFAFA]"
-              >
-                Add Reminder
-              </button>
-            </div>
-            <div className="mt-1 text-xs opacity-40 text-minimal-text dark:text-[#FAFAFA]">
-              {reminderInput.type === 'relative'
-                ? 'reminder will be shown X days before the task is due'
-                : 'reminder will be shown at the specific date and time'}
-            </div>
-          </div>
-
           {/* Actions */}
-          <div className="flex gap-2 justify-end pt-4 border-t border-minimal-border dark:border-[#2A2A2A]">
+          <div className="flex gap-2 justify-end pt-3 border-t border-minimal-border dark:border-[#2A2A2A]">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-sm border border-minimal-border dark:border-[#2A2A2A] hover:bg-minimal-hover dark:hover:bg-[#1A1A1A] transition-colors text-minimal-text dark:text-[#FAFAFA]"
+              className="px-4 py-2 text-sm border border-minimal-border dark:border-[#2A2A2A]
+                         hover:bg-minimal-hover dark:hover:bg-[#1A1A1A] transition-colors
+                         text-minimal-text dark:text-[#FAFAFA]"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={!title.trim() || !projectId}
-              className="px-4 py-2 text-sm border border-minimal-border dark:border-[#2A2A2A] hover:bg-minimal-hover dark:hover:bg-[#1A1A1A] transition-colors disabled:opacity-40 disabled:cursor-not-allowed text-minimal-text dark:text-[#FAFAFA]"
+              className="px-4 py-2 text-sm border border-minimal-border dark:border-[#2A2A2A]
+                         hover:bg-minimal-hover dark:hover:bg-[#1A1A1A] transition-colors
+                         disabled:opacity-40 disabled:cursor-not-allowed
+                         text-minimal-text dark:text-[#FAFAFA]"
             >
               {taskId ? 'Save' : 'Add'}
             </button>
+          </div>
+
+          {/* Keyboard Shortcuts Hint */}
+          <div className="mt-2 text-xs opacity-40 text-center text-minimal-text dark:text-[#FAFAFA]">
+            ⌘↵ to save • Esc to cancel • ⌘M for more options
           </div>
         </form>
       </div>

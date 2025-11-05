@@ -7,8 +7,12 @@ import { ProductivityDashboard } from './components/ProductivityDashboard';
 import { TaskDetailModal } from './components/TaskDetailModal';
 import { startReminderScheduler, stopReminderScheduler } from './utils/reminderScheduler';
 import { formatDueDate, getDateUrgency, getDateUrgencyColor } from './utils/dateFormatter';
+import { useAuth } from './contexts/AuthContext';
+import { AuthPage } from './components/auth/AuthPage';
+import { syncService } from './services/syncService';
 
 function App() {
+  const { user, loading: authLoading } = useAuth();
   const {
     loadFromStorage,
     getTasksForCurrentView,
@@ -24,10 +28,45 @@ function App() {
   const [isTaskFormOpen, setIsTaskFormOpen] = useState(false);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
 
+  // Initialize store when authenticated
   useEffect(() => {
-    loadFromStorage();
-    goToToday();
-  }, [loadFromStorage, goToToday]);
+    if (user) {
+      const initStore = async () => {
+        try {
+          await useTaskStore.getState().initializeStore();
+          goToToday();
+        } catch (error) {
+          console.error('Failed to initialize store:', error);
+        }
+      };
+      initStore();
+    }
+  }, [user, goToToday]);
+
+  // Set up real-time subscriptions
+  useEffect(() => {
+    if (!user) return;
+
+    const unsubscribe = syncService.subscribeToChanges(
+      user.id,
+      // On task change
+      async (payload: any) => {
+        console.log('Real-time task change:', payload);
+        // Refresh store data to get latest
+        await useTaskStore.getState().initializeStore();
+      },
+      // On project change
+      async (payload: any) => {
+        console.log('Real-time project change:', payload);
+        // Refresh store data to get latest
+        await useTaskStore.getState().initializeStore();
+      }
+    );
+
+    return () => {
+      unsubscribe();
+    };
+  }, [user]);
 
   // Start reminder scheduler
   useEffect(() => {
@@ -43,15 +82,35 @@ function App() {
     const priorityOrder = { p1: 1, p2: 2, p3: 3, p4: 4 };
     return priorityOrder[a.priority] - priorityOrder[b.priority];
   });
-  const defaultProject = projects[0]; // Inbox or first project
+  const defaultProject = projects[0]; // First project
 
-  const handleAddTask = (e: React.FormEvent) => {
+  const handleAddTask = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!taskTitle.trim() || !defaultProject) return;
+    if (!taskTitle.trim()) return;
+
+    // Create a default project if user has none
+    let projectId = defaultProject?.id;
+    if (!projectId) {
+      try {
+        await useTaskStore.getState().addProject({
+          name: 'Tasks',
+          color: '#4A90E2',
+          isFavorite: false,
+          viewStyle: 'list',
+          order: 0,
+        });
+        // Get the newly created project
+        const newProject = useTaskStore.getState().projects[0];
+        projectId = newProject.id;
+      } catch (error) {
+        console.error('Failed to create default project:', error);
+        return;
+      }
+    }
 
     addTask({
       title: taskTitle.trim(),
-      projectId: defaultProject.id,
+      projectId,
       status: TaskStatus.TODO,
       priority: Priority.P4,
     });
@@ -85,6 +144,24 @@ function App() {
     }
   };
 
+  // Show loading screen while checking authentication
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-minimal-bg dark:bg-[#0A0A0A]">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-gray-300 border-t-blue-600 mb-4"></div>
+          <p className="text-minimal-text dark:text-[#FAFAFA] opacity-60">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show auth page if not authenticated
+  if (!user) {
+    return <AuthPage />;
+  }
+
+  // Show main app if authenticated
   return (
     <div className="min-h-screen bg-minimal-bg dark:bg-[#0A0A0A] flex transition-colors duration-200">
       {/* Sidebar Navigation */}
