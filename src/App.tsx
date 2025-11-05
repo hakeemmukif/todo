@@ -6,7 +6,7 @@ import { EnhancedTaskForm } from './components/EnhancedTaskForm';
 import { ProductivityDashboard } from './components/ProductivityDashboard';
 import { TaskDetailModal } from './components/TaskDetailModal';
 import { startReminderScheduler, stopReminderScheduler } from './utils/reminderScheduler';
-import { formatDueDate, isOverdue } from './utils/dateFormatter';
+import { formatDueDate, getDateUrgency, getDateUrgencyColor } from './utils/dateFormatter';
 
 function App() {
   const {
@@ -197,11 +197,7 @@ function App() {
                             )}
 
                             {task.dueDate && (
-                              <div className={`text-xs mt-1.5 ml-3.5 ${
-                                isOverdue(task.dueDate, task.dueTime)
-                                  ? 'text-red-500'
-                                  : 'opacity-50 text-minimal-text dark:text-[#FAFAFA]'
-                              }`}>
+                              <div className={`text-xs mt-1.5 ${getDateUrgencyColor(getDateUrgency(task.dueDate, task.dueTime))}`}>
                                 {formatDueDate(task.dueDate, task.dueTime)}
                               </div>
                             )}

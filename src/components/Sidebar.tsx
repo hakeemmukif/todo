@@ -4,12 +4,16 @@ import { ViewType } from '../types/task';
 import { ProjectModal } from './ProjectModal';
 import { LabelModal } from './LabelModal';
 import { FilterModal } from './FilterModal';
-import { Inbox, Calendar, CalendarDays, BarChart3, Check, Sun, Moon } from 'lucide-react';
+import { EnhancedTaskForm } from './EnhancedTaskForm';
+import { SettingsModal } from './SettingsModal';
+import { Inbox, Calendar, CalendarDays, BarChart3, Check, Sun, Moon, Plus, Settings } from 'lucide-react';
 
 export const Sidebar = () => {
   const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
   const [isLabelModalOpen, setIsLabelModalOpen] = useState(false);
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
+  const [isTaskFormOpen, setIsTaskFormOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
 
   const {
@@ -27,13 +31,14 @@ export const Sidebar = () => {
     goToCompleted,
     toggleTheme,
     theme,
+    themeColor,
   } = useTaskStore();
 
-  // Update time every minute
+  // Update time every second for real-time display
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentTime(new Date());
-    }, 60000);
+    }, 1000);
     return () => clearInterval(timer);
   }, []);
 
@@ -54,6 +59,7 @@ export const Sidebar = () => {
   const formattedTime = currentTime.toLocaleTimeString('en-US', {
     hour: 'numeric',
     minute: '2-digit',
+    second: '2-digit',
     hour12: true
   });
 
@@ -77,12 +83,35 @@ export const Sidebar = () => {
             <div className="mt-0.5">{formattedTime}</div>
           </div>
         </div>
+        <div className="flex gap-1">
+          <button
+            onClick={() => setIsSettingsOpen(true)}
+            className="p-2 hover:bg-minimal-hover dark:hover:bg-[#1A1A1A] transition-colors rounded text-minimal-text dark:text-[#FAFAFA]"
+            title="Settings"
+          >
+            <Settings className="w-4 h-4" />
+          </button>
+          <button
+            onClick={toggleTheme}
+            className="p-2 hover:bg-minimal-hover dark:hover:bg-[#1A1A1A] transition-colors rounded text-minimal-text dark:text-[#FAFAFA]"
+            title={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
+          >
+            {theme === 'light' ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
+          </button>
+        </div>
+      </div>
+
+      {/* Create Task Button */}
+      <div className="p-4">
         <button
-          onClick={toggleTheme}
-          className="p-2 hover:bg-minimal-hover dark:hover:bg-[#1A1A1A] transition-colors rounded text-minimal-text dark:text-[#FAFAFA]"
-          title={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
+          onClick={() => setIsTaskFormOpen(true)}
+          className="w-full flex items-center gap-2 px-3 py-2 text-sm transition-colors rounded hover:bg-minimal-hover dark:hover:bg-[#1A1A1A]"
+          style={{
+            color: themeColor
+          }}
         >
-          {theme === 'light' ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
+          <Plus className="w-4 h-4" />
+          <span>Add Task</span>
         </button>
       </div>
 
@@ -93,9 +122,12 @@ export const Sidebar = () => {
           <div className="mb-4">
             <button
               onClick={goToInbox}
-              className={`w-full text-left px-3 py-2 text-sm hover:bg-minimal-hover dark:hover:bg-[#1A1A1A] transition-colors text-minimal-text dark:text-[#FAFAFA] flex items-center gap-2 ${
-                isViewActive(ViewType.INBOX) ? 'bg-minimal-hover dark:bg-[#1A1A1A]' : ''
+              className={`w-full text-left px-3 py-2 text-sm hover:bg-minimal-hover dark:hover:bg-[#1A1A1A] transition-colors flex items-center gap-2 ${
+                isViewActive(ViewType.INBOX)
+                  ? 'bg-minimal-hover dark:bg-[#1A1A1A]'
+                  : 'text-minimal-text dark:text-[#FAFAFA]'
               }`}
+              style={isViewActive(ViewType.INBOX) ? { color: themeColor } : {}}
             >
               <Inbox className="w-4 h-4" />
               Inbox
@@ -103,9 +135,12 @@ export const Sidebar = () => {
 
             <button
               onClick={goToToday}
-              className={`w-full text-left px-3 py-2 text-sm hover:bg-minimal-hover dark:hover:bg-[#1A1A1A] transition-colors text-minimal-text dark:text-[#FAFAFA] flex items-center gap-2 ${
-                isViewActive(ViewType.TODAY) ? 'bg-minimal-hover dark:bg-[#1A1A1A]' : ''
+              className={`w-full text-left px-3 py-2 text-sm hover:bg-minimal-hover dark:hover:bg-[#1A1A1A] transition-colors flex items-center gap-2 ${
+                isViewActive(ViewType.TODAY)
+                  ? 'bg-minimal-hover dark:bg-[#1A1A1A]'
+                  : 'text-minimal-text dark:text-[#FAFAFA]'
               }`}
+              style={isViewActive(ViewType.TODAY) ? { color: themeColor } : {}}
             >
               <Calendar className="w-4 h-4" />
               Today
@@ -113,9 +148,12 @@ export const Sidebar = () => {
 
             <button
               onClick={goToUpcoming}
-              className={`w-full text-left px-3 py-2 text-sm hover:bg-minimal-hover dark:hover:bg-[#1A1A1A] transition-colors text-minimal-text dark:text-[#FAFAFA] flex items-center gap-2 ${
-                isViewActive(ViewType.UPCOMING) ? 'bg-minimal-hover dark:bg-[#1A1A1A]' : ''
+              className={`w-full text-left px-3 py-2 text-sm hover:bg-minimal-hover dark:hover:bg-[#1A1A1A] transition-colors flex items-center gap-2 ${
+                isViewActive(ViewType.UPCOMING)
+                  ? 'bg-minimal-hover dark:bg-[#1A1A1A]'
+                  : 'text-minimal-text dark:text-[#FAFAFA]'
               }`}
+              style={isViewActive(ViewType.UPCOMING) ? { color: themeColor } : {}}
             >
               <CalendarDays className="w-4 h-4" />
               Upcoming
@@ -123,9 +161,12 @@ export const Sidebar = () => {
 
             <button
               onClick={goToInsights}
-              className={`w-full text-left px-3 py-2 text-sm hover:bg-minimal-hover dark:hover:bg-[#1A1A1A] transition-colors text-minimal-text dark:text-[#FAFAFA] flex items-center gap-2 ${
-                isViewActive(ViewType.INSIGHTS) ? 'bg-minimal-hover dark:bg-[#1A1A1A]' : ''
+              className={`w-full text-left px-3 py-2 text-sm hover:bg-minimal-hover dark:hover:bg-[#1A1A1A] transition-colors flex items-center gap-2 ${
+                isViewActive(ViewType.INSIGHTS)
+                  ? 'bg-minimal-hover dark:bg-[#1A1A1A]'
+                  : 'text-minimal-text dark:text-[#FAFAFA]'
               }`}
+              style={isViewActive(ViewType.INSIGHTS) ? { color: themeColor } : {}}
             >
               <BarChart3 className="w-4 h-4" />
               Insights
@@ -133,9 +174,12 @@ export const Sidebar = () => {
 
             <button
               onClick={goToCompleted}
-              className={`w-full text-left px-3 py-2 text-sm hover:bg-minimal-hover dark:hover:bg-[#1A1A1A] transition-colors text-minimal-text dark:text-[#FAFAFA] flex items-center gap-2 ${
-                isViewActive(ViewType.COMPLETED) ? 'bg-minimal-hover dark:bg-[#1A1A1A]' : ''
+              className={`w-full text-left px-3 py-2 text-sm hover:bg-minimal-hover dark:hover:bg-[#1A1A1A] transition-colors flex items-center gap-2 ${
+                isViewActive(ViewType.COMPLETED)
+                  ? 'bg-minimal-hover dark:bg-[#1A1A1A]'
+                  : 'text-minimal-text dark:text-[#FAFAFA]'
               }`}
+              style={isViewActive(ViewType.COMPLETED) ? { color: themeColor } : {}}
             >
               <Check className="w-4 h-4" />
               Completed
@@ -152,12 +196,15 @@ export const Sidebar = () => {
                 <button
                   key={project.id}
                   onClick={() => goToProject(project.id)}
-                  className={`w-full text-left px-3 py-2 text-sm hover:bg-minimal-hover dark:hover:bg-[#1A1A1A] transition-colors flex items-center gap-2 text-minimal-text dark:text-[#FAFAFA] ${
-                    isViewActive(ViewType.PROJECT, project.id) ? 'bg-minimal-hover dark:bg-[#1A1A1A]' : ''
+                  className={`w-full text-left px-3 py-2 text-sm hover:bg-minimal-hover dark:hover:bg-[#1A1A1A] transition-colors flex items-center gap-2 ${
+                    isViewActive(ViewType.PROJECT, project.id)
+                      ? 'bg-minimal-hover dark:bg-[#1A1A1A]'
+                      : 'text-minimal-text dark:text-[#FAFAFA]'
                   }`}
+                  style={isViewActive(ViewType.PROJECT, project.id) ? { color: themeColor } : {}}
                 >
                   <span
-                    style={{ color: project.color }}
+                    style={{ color: isViewActive(ViewType.PROJECT, project.id) ? themeColor : project.color }}
                     className="text-sm"
                   >
                     {project.icon || '#'}
@@ -178,12 +225,15 @@ export const Sidebar = () => {
                 <button
                   key={label.id}
                   onClick={() => goToLabel(label.id)}
-                  className={`w-full text-left px-3 py-2 text-sm hover:bg-minimal-hover dark:hover:bg-[#1A1A1A] transition-colors flex items-center gap-2 text-minimal-text dark:text-[#FAFAFA] ${
-                    isViewActive(ViewType.LABEL, label.id) ? 'bg-minimal-hover dark:bg-[#1A1A1A]' : ''
+                  className={`w-full text-left px-3 py-2 text-sm hover:bg-minimal-hover dark:hover:bg-[#1A1A1A] transition-colors flex items-center gap-2 ${
+                    isViewActive(ViewType.LABEL, label.id)
+                      ? 'bg-minimal-hover dark:bg-[#1A1A1A]'
+                      : 'text-minimal-text dark:text-[#FAFAFA]'
                   }`}
+                  style={isViewActive(ViewType.LABEL, label.id) ? { color: themeColor } : {}}
                 >
                   <span
-                    style={{ color: label.color }}
+                    style={{ color: isViewActive(ViewType.LABEL, label.id) ? themeColor : label.color }}
                     className="text-xs"
                   >
                     ●
@@ -204,12 +254,15 @@ export const Sidebar = () => {
                 <button
                   key={filter.id}
                   onClick={() => goToFilter(filter.id)}
-                  className={`w-full text-left px-3 py-2 text-sm hover:bg-minimal-hover dark:hover:bg-[#1A1A1A] transition-colors flex items-center gap-2 text-minimal-text dark:text-[#FAFAFA] ${
-                    isViewActive(ViewType.FILTER, filter.id) ? 'bg-minimal-hover dark:bg-[#1A1A1A]' : ''
+                  className={`w-full text-left px-3 py-2 text-sm hover:bg-minimal-hover dark:hover:bg-[#1A1A1A] transition-colors flex items-center gap-2 ${
+                    isViewActive(ViewType.FILTER, filter.id)
+                      ? 'bg-minimal-hover dark:bg-[#1A1A1A]'
+                      : 'text-minimal-text dark:text-[#FAFAFA]'
                   }`}
+                  style={isViewActive(ViewType.FILTER, filter.id) ? { color: themeColor } : {}}
                 >
                   <span
-                    style={{ color: filter.color }}
+                    style={{ color: isViewActive(ViewType.FILTER, filter.id) ? themeColor : filter.color }}
                     className="text-xs"
                   >
                     ◆
@@ -256,6 +309,14 @@ export const Sidebar = () => {
       <FilterModal
         isOpen={isFilterModalOpen}
         onClose={() => setIsFilterModalOpen(false)}
+      />
+      <EnhancedTaskForm
+        isOpen={isTaskFormOpen}
+        onClose={() => setIsTaskFormOpen(false)}
+      />
+      <SettingsModal
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
       />
     </div>
   );

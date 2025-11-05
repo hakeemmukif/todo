@@ -184,15 +184,15 @@ export const EnhancedTaskForm = ({ isOpen, onClose, taskId }: EnhancedTaskFormPr
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-30 dark:bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-minimal-bg dark:bg-[#0A0A0A] border border-minimal-border dark:border-[#2A2A2A] w-full max-w-2xl p-6 max-h-[90vh] overflow-y-auto">
-        <h2 className="text-lg font-medium mb-6 text-minimal-text dark:text-[#FAFAFA]">
+    <div className="fixed inset-0 bg-black bg-opacity-30 dark:bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-minimal-bg dark:bg-[#0A0A0A] border border-minimal-border dark:border-[#2A2A2A] w-full max-w-2xl p-5">
+        <h2 className="text-lg font-medium mb-4 text-minimal-text dark:text-[#FAFAFA]">
           {taskId ? 'Edit Task' : 'Add Task'}
         </h2>
 
         <form onSubmit={handleSubmit}>
           {/* Task Title */}
-          <div className="mb-4">
+          <div className="mb-3">
             <label className="block text-xs opacity-60 mb-2 text-minimal-text dark:text-[#FAFAFA]">Title*</label>
             <input
               type="text"
@@ -205,19 +205,19 @@ export const EnhancedTaskForm = ({ isOpen, onClose, taskId }: EnhancedTaskFormPr
           </div>
 
           {/* Description */}
-          <div className="mb-4">
+          <div className="mb-3">
             <label className="block text-xs opacity-60 mb-2 text-minimal-text dark:text-[#FAFAFA]">Description</label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Add details..."
-              rows={3}
+              rows={2}
               className="w-full px-3 py-2 border border-minimal-border dark:border-[#2A2A2A] focus:outline-none focus:border-minimal-text dark:focus:border-[#FAFAFA] bg-transparent text-sm resize-none text-minimal-text dark:text-[#FAFAFA]"
             />
           </div>
 
           {/* Due Date with NLP */}
-          <div className="mb-4">
+          <div className="mb-3">
             <label className="block text-xs opacity-60 mb-2 text-minimal-text dark:text-[#FAFAFA]">
               Due Date
               {parsedDueDate && (
@@ -239,7 +239,7 @@ export const EnhancedTaskForm = ({ isOpen, onClose, taskId }: EnhancedTaskFormPr
           </div>
 
           {/* Recurrence with NLP */}
-          <div className="mb-4">
+          <div className="mb-3">
             <label className="block text-xs opacity-60 mb-2 text-minimal-text dark:text-[#FAFAFA]">
               Recurrence
               {parsedRecurrence && (
@@ -261,12 +261,18 @@ export const EnhancedTaskForm = ({ isOpen, onClose, taskId }: EnhancedTaskFormPr
           </div>
 
           {/* Project Selector */}
-          <div className="mb-4">
+          <div className="mb-3">
             <label className="block text-xs opacity-60 mb-2 text-minimal-text dark:text-[#FAFAFA]">Project*</label>
             <select
               value={projectId}
               onChange={(e) => setProjectId(e.target.value)}
-              className="w-full px-3 py-2 border border-minimal-border dark:border-[#2A2A2A] focus:outline-none focus:border-minimal-text dark:focus:border-[#FAFAFA] bg-minimal-bg dark:bg-[#0A0A0A] text-sm text-minimal-text dark:text-[#FAFAFA]"
+              className="w-full px-3 py-2 border border-minimal-border dark:border-[#2A2A2A] focus:outline-none focus:border-minimal-text dark:focus:border-[#FAFAFA] bg-minimal-bg dark:bg-[#0A0A0A] text-sm text-minimal-text dark:text-[#FAFAFA] appearance-none cursor-pointer"
+              style={{
+                backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23999' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
+                backgroundRepeat: 'no-repeat',
+                backgroundPosition: 'right 0.75rem center',
+                paddingRight: '2.5rem'
+              }}
             >
               {projects.filter(p => !p.isArchived).map((project) => (
                 <option key={project.id} value={project.id}>
@@ -277,7 +283,7 @@ export const EnhancedTaskForm = ({ isOpen, onClose, taskId }: EnhancedTaskFormPr
           </div>
 
           {/* Priority Selector */}
-          <div className="mb-4">
+          <div className="mb-3">
             <label className="block text-xs opacity-60 mb-2 text-minimal-text dark:text-[#FAFAFA]">Priority</label>
             <div className="flex gap-2">
               {[Priority.P1, Priority.P2, Priority.P3, Priority.P4].map((p) => (
@@ -299,7 +305,7 @@ export const EnhancedTaskForm = ({ isOpen, onClose, taskId }: EnhancedTaskFormPr
 
           {/* Labels Selector */}
           {labels.length > 0 && (
-            <div className="mb-6">
+            <div className="mb-3">
               <label className="block text-xs opacity-60 mb-2 text-minimal-text dark:text-[#FAFAFA]">
                 labels ({selectedLabels.length} selected)
               </label>
@@ -327,7 +333,7 @@ export const EnhancedTaskForm = ({ isOpen, onClose, taskId }: EnhancedTaskFormPr
           )}
 
           {/* Reminders */}
-          <div className="mb-6">
+          <div className="mb-3">
             <label className="block text-xs opacity-60 mb-2 text-minimal-text dark:text-[#FAFAFA]">
               Reminders ({tempReminders.length})
             </label>
@@ -365,7 +371,13 @@ export const EnhancedTaskForm = ({ isOpen, onClose, taskId }: EnhancedTaskFormPr
                   onChange={(e) =>
                     setReminderInput({ ...reminderInput, type: e.target.value as 'absolute' | 'relative' })
                   }
-                  className="w-full px-3 py-2 border border-minimal-border dark:border-[#2A2A2A] focus:outline-none focus:border-minimal-text dark:focus:border-[#FAFAFA] bg-minimal-bg dark:bg-[#0A0A0A] text-sm mb-2 text-minimal-text dark:text-[#FAFAFA]"
+                  className="w-full px-3 py-2 border border-minimal-border dark:border-[#2A2A2A] focus:outline-none focus:border-minimal-text dark:focus:border-[#FAFAFA] bg-minimal-bg dark:bg-[#0A0A0A] text-sm mb-2 text-minimal-text dark:text-[#FAFAFA] appearance-none cursor-pointer"
+                  style={{
+                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23999' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
+                    backgroundRepeat: 'no-repeat',
+                    backgroundPosition: 'right 0.75rem center',
+                    paddingRight: '2.5rem'
+                  }}
                 >
                   <option value="relative">Relative (Days Before Due Date)</option>
                   <option value="absolute">Absolute (Specific Date/Time)</option>

@@ -81,3 +81,58 @@ export const isOverdue = (dueDate?: string, dueTime?: string): boolean => {
 
   return due < now;
 };
+
+export type DateUrgency = 'overdue' | 'today' | 'tomorrow' | 'upcoming';
+
+export const getDateUrgency = (dueDate?: string, dueTime?: string): DateUrgency | null => {
+  if (!dueDate) return null;
+
+  const date = new Date(dueDate);
+  const today = new Date();
+  const tomorrow = new Date(today);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+
+  // Reset time parts for comparison
+  const resetTime = (d: Date) => {
+    const newDate = new Date(d);
+    newDate.setHours(0, 0, 0, 0);
+    return newDate;
+  };
+
+  const dateOnly = resetTime(date);
+  const todayOnly = resetTime(today);
+  const tomorrowOnly = resetTime(tomorrow);
+
+  // Check if overdue
+  if (isOverdue(dueDate, dueTime)) {
+    return 'overdue';
+  }
+
+  // Check if today
+  if (dateOnly.getTime() === todayOnly.getTime()) {
+    return 'today';
+  }
+
+  // Check if tomorrow
+  if (dateOnly.getTime() === tomorrowOnly.getTime()) {
+    return 'tomorrow';
+  }
+
+  // Otherwise it's upcoming
+  return 'upcoming';
+};
+
+export const getDateUrgencyColor = (urgency: DateUrgency | null): string => {
+  switch (urgency) {
+    case 'overdue':
+      return 'text-red-600 dark:text-red-500';
+    case 'today':
+      return 'text-green-600 dark:text-green-500';
+    case 'tomorrow':
+      return 'text-orange-600 dark:text-orange-500';
+    case 'upcoming':
+      return 'text-minimal-text dark:text-[#FAFAFA] opacity-60';
+    default:
+      return 'text-minimal-text dark:text-[#FAFAFA] opacity-60';
+  }
+};

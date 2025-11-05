@@ -32,6 +32,7 @@ const STORAGE_KEYS = {
   KARMA: 'todoist_karma',
   VIEW_STATE: 'todoist_view_state',
   THEME: 'todoist_theme',
+  THEME_COLOR: 'todoist_theme_color',
 };
 
 const loadFromStorage = <T>(key: string, defaultValue: T): T => {
@@ -64,6 +65,7 @@ interface TaskStore {
   karma: KarmaProfile;
   viewState: ViewState;
   theme: 'light' | 'dark';
+  themeColor: string;
 
   // Projects
   addProject: (project: Omit<Project, 'id' | 'createdAt' | 'sections'>) => void;
@@ -124,6 +126,7 @@ interface TaskStore {
   // Theme
   toggleTheme: () => void;
   setTheme: (theme: 'light' | 'dark') => void;
+  setThemeColor: (color: string) => void;
 
   // Queries
   getTasksForCurrentView: () => Task[];
@@ -169,6 +172,7 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
     type: ViewType.TODAY,
   },
   theme: 'light',
+  themeColor: '#dc4c3e', // Default red color (Todoist-like)
 
   // ========================================================================
   // PROJECTS
@@ -732,6 +736,14 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
     }
   },
 
+  setThemeColor: (color) => {
+    set({ themeColor: color });
+    saveToStorage(STORAGE_KEYS.THEME_COLOR, color);
+
+    // Apply theme color to document as CSS variable
+    document.documentElement.style.setProperty('--theme-color', color);
+  },
+
   // ========================================================================
   // QUERIES
   // ========================================================================
@@ -1043,7 +1055,11 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
       document.documentElement.classList.remove('dark');
     }
 
-    set({ tasks, projects, labels, filters, karma, viewState, theme: savedTheme });
+    // Load theme color and apply to document
+    const savedThemeColor = loadFromStorage<string>(STORAGE_KEYS.THEME_COLOR, '#dc4c3e');
+    document.documentElement.style.setProperty('--theme-color', savedThemeColor);
+
+    set({ tasks, projects, labels, filters, karma, viewState, theme: savedTheme, themeColor: savedThemeColor });
 
     // If no projects exist, run migration
     if (projects.length === 0) {
