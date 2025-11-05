@@ -5,6 +5,7 @@ import { projectService } from './projectService';
 import { labelService } from './labelService';
 import { filterService } from './filterService';
 import { karmaService } from './karmaService';
+import { logger } from '../utils/logger';
 import type { Database } from '../types/database';
 import type { Task, Project, Label, Filter, KarmaProfile, Section } from '../types/task';
 
@@ -92,6 +93,10 @@ export const syncService = {
         karma: karmaProfile ? this.dbKarmaToLocal(karmaProfile) : null,
       };
     } catch (error) {
+      logger.error('Failed to sync all data', {
+        data: { error, userId },
+        context: { service: 'syncService', method: 'syncAllData' }
+      });
       console.error('Sync error:', error);
       throw error;
     }
@@ -216,6 +221,10 @@ export const syncService = {
     try {
       localStorage.setItem(key, JSON.stringify(data));
     } catch (error) {
+      logger.error('Failed to save to localStorage', {
+        data: { error, key },
+        context: { service: 'syncService', method: 'saveToLocalStorage' }
+      });
       console.error('Failed to save to localStorage:', error);
     }
   },
