@@ -24,7 +24,7 @@ export const EnhancedTaskForm = ({ isOpen, onClose, taskId }: EnhancedTaskFormPr
 
   // Core fields (always visible)
   const [title, setTitle] = useState('');
-  const [projectId, setProjectId] = useState('');
+  const [projectId, setProjectId] = useState<string | null>(null);
 
   // Date management with custom hook
   const dateInput = useDateInput(existingTask?.dueDate);
@@ -62,8 +62,8 @@ export const EnhancedTaskForm = ({ isOpen, onClose, taskId }: EnhancedTaskFormPr
       // Reset for new task
       setTitle('');
       setDescription('');
-      // Default to first project, or 'inbox' if no projects
-      setProjectId(projects[0]?.id || 'inbox');
+      // Default to Inbox (null project)
+      setProjectId(null);
       setPriority(Priority.P4);
       setSelectedLabels([]);
       dateInput.clearDate();
@@ -93,17 +93,12 @@ export const EnhancedTaskForm = ({ isOpen, onClose, taskId }: EnhancedTaskFormPr
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!title.trim() || !projectId) return;
-
-    // Use first project if 'inbox' is selected but no actual inbox project exists
-    const finalProjectId = projectId === 'inbox' && !projects.some(p => p.id === 'inbox')
-      ? projects[0]?.id || projectId
-      : projectId;
+    if (!title.trim()) return;
 
     const taskData = {
       title: title.trim(),
       description: description.trim() || undefined,
-      projectId: finalProjectId,
+      projectId: projectId, // Can be null for Inbox
       status: TaskStatus.TODO,
       priority,
       labelIds: selectedLabels,
@@ -135,7 +130,7 @@ export const EnhancedTaskForm = ({ isOpen, onClose, taskId }: EnhancedTaskFormPr
     >
       <div
         className="bg-minimal-bg dark:bg-[#0A0A0A] border border-minimal-border dark:border-[#2A2A2A]
-                   w-full max-w-lg p-4 shadow-2xl"
+                   w-full max-w-lg p-4 sm:p-6 shadow-2xl max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
         onKeyDown={handleKeyDown}
       >
@@ -160,9 +155,9 @@ export const EnhancedTaskForm = ({ isOpen, onClose, taskId }: EnhancedTaskFormPr
             error={!title.trim() ? undefined : undefined}
           />
 
-          <div className="flex gap-2 mb-2">
-            {/* Due Date - 40% width */}
-            <div className="flex-[4]">
+          <div className="flex flex-col gap-2 mb-2">
+            {/* Due Date - Full width */}
+            <div className="w-full">
               <DateInput
                 value={dateInput.input}
                 parsedDate={dateInput.parsedDate}
@@ -171,29 +166,30 @@ export const EnhancedTaskForm = ({ isOpen, onClose, taskId }: EnhancedTaskFormPr
               />
             </div>
 
-            {/* Project - 30% width */}
-            <div className="flex-[3]">
-              <label className="block text-xs opacity-60 mb-2 text-minimal-text dark:text-[#FAFAFA]">
-                Project *
-              </label>
-              <ProjectSelector
-                value={projectId}
-                onChange={setProjectId}
-                projects={projects}
-                showLabel={false}
-              />
-            </div>
+            {/* Project and Priority - Side by side */}
+            <div className="flex gap-2">
+              <div className="flex-1">
+                <label className="block text-xs opacity-60 mb-2 text-minimal-text dark:text-[#FAFAFA]">
+                  Project *
+                </label>
+                <ProjectSelector
+                  value={projectId}
+                  onChange={setProjectId}
+                  projects={projects}
+                  showLabel={false}
+                />
+              </div>
 
-            {/* Priority - 30% width */}
-            <div className="flex-[3]">
-              <label className="block text-xs opacity-60 mb-2 text-minimal-text dark:text-[#FAFAFA]">
-                Priority
-              </label>
-              <PriorityDropdown
-                value={priority}
-                onChange={setPriority}
-                showLabel={false}
-              />
+              <div className="flex-1">
+                <label className="block text-xs opacity-60 mb-2 text-minimal-text dark:text-[#FAFAFA]">
+                  Priority
+                </label>
+                <PriorityDropdown
+                  value={priority}
+                  onChange={setPriority}
+                  showLabel={false}
+                />
+              </div>
             </div>
           </div>
 
