@@ -37,8 +37,8 @@ export const showNotification = (title: string, options?: NotificationOptions) =
 
   if (Notification.permission === 'granted') {
     return new Notification(title, {
-      icon: '/favicon.ico',
-      badge: '/favicon.ico',
+      icon: '/favicon.svg',
+      badge: '/favicon.svg',
       ...options,
     });
   }
