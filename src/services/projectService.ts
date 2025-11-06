@@ -117,4 +117,74 @@ export const projectService = {
 
     if (error) throw error;
   },
+
+  // ============================================================================
+  // PROJECT HIERARCHY HELPERS
+  // ============================================================================
+
+  async getChildProjects(projectId: string): Promise<ProjectRow[]> {
+    const { data, error } = await supabase
+      .from('projects')
+      .select('*')
+      .eq('parent_id', projectId)
+      .order('order', { ascending: true });
+
+    if (error) throw error;
+    return data || [];
+  },
+
+  async getParentProject(projectId: string): Promise<ProjectRow | null> {
+    const project = await this.getProjectById(projectId);
+    if (!project?.parent_id) return null;
+
+    return this.getProjectById(project.parent_id);
+  },
+
+  async getProjectHierarchy(userId: string): Promise<ProjectRow[]> {
+    // Get all projects for the user
+    const { data, error } = await supabase
+      .from('projects')
+      .select('*')
+      .eq('user_id', userId)
+      .order('order', { ascending: true });
+
+    if (error) throw error;
+    return data || [];
+  },
+
+  async validateParentChange(projectId: string, newParentId: string | null): Promise<boolean> {
+    // Can't set self as parent
+    if (projectId === newParentId) {
+      throw new Error('A project cannot be its own parent');
+    }
+
+    // If no parent, always valid
+    if (!newParentId) return true;
+
+    // Check if newParentId exists and is not archived
+    const parent = await this.getProjectById(newParentId);
+    if (!parent) {
+      throw new Error('Parent project not found');
+    }
+    if (parent.is_archived) {
+      throw new Error('Cannot set an archived project as parent');
+    }
+
+    // Check for circular dependency by walking up the parent chain
+    let currentParentId = newParentId;
+    const visited = new Set<string>([projectId]);
+
+    while (currentParentId) {
+      if (visited.has(currentParentId)) {
+        throw new Error('Circular dependency detected: this would create a loop in the project hierarchy');
+      }
+      visited.add(currentParentId);
+
+      const currentParent = await this.getProjectById(currentParentId);
+      if (!currentParent) break;
+      currentParentId = currentParent.parent_id;
+    }
+
+    return true;
+  },
 };

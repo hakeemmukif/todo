@@ -4,20 +4,19 @@ import { ViewType } from '../types/task';
 import { ProjectModal } from './ProjectModal';
 import { LabelModal } from './LabelModal';
 import { FilterModal } from './FilterModal';
-import { EnhancedTaskForm } from './EnhancedTaskForm';
 import { SettingsModal } from './SettingsModal';
 import { useAuth } from '../contexts/AuthContext';
 import { Inbox, Calendar, CalendarDays, BarChart3, Check, Sun, Moon, Plus, Settings, LogOut } from 'lucide-react';
 
 interface SidebarProps {
   onNavigate?: () => void;
+  onOpenTaskForm?: () => void;
 }
 
-export const Sidebar = ({ onNavigate }: SidebarProps = {}) => {
+export const Sidebar = ({ onNavigate, onOpenTaskForm }: SidebarProps = {}) => {
   const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
   const [isLabelModalOpen, setIsLabelModalOpen] = useState(false);
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
-  const [isTaskFormOpen, setIsTaskFormOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
 
@@ -111,7 +110,7 @@ export const Sidebar = ({ onNavigate }: SidebarProps = {}) => {
       {/* Create Task Button */}
       <div className="p-4">
         <button
-          onClick={() => setIsTaskFormOpen(true)}
+          onClick={() => onOpenTaskForm?.()}
           className="w-full flex items-center gap-2 px-3 py-2 text-sm transition-colors rounded hover:bg-minimal-hover dark:hover:bg-[#1A1A1A]"
           style={{
             color: themeColor
@@ -205,26 +204,48 @@ export const Sidebar = ({ onNavigate }: SidebarProps = {}) => {
               <div className="px-3 py-1 text-xs opacity-40 uppercase tracking-wider text-minimal-text dark:text-[#FAFAFA]">
                 Projects
               </div>
-              {projects.filter(p => !p.isArchived).map((project) => (
-                <button
-                  key={project.id}
-                  onClick={() => goToProject(project.id)}
-                  className={`w-full text-left px-3 py-2 text-sm hover:bg-minimal-hover dark:hover:bg-[#1A1A1A] transition-colors flex items-center gap-2 ${
-                    isViewActive(ViewType.PROJECT, project.id)
-                      ? 'bg-minimal-hover dark:bg-[#1A1A1A]'
-                      : 'text-minimal-text dark:text-[#FAFAFA]'
-                  }`}
-                  style={isViewActive(ViewType.PROJECT, project.id) ? { color: themeColor } : {}}
-                >
-                  <span
-                    style={{ color: isViewActive(ViewType.PROJECT, project.id) ? themeColor : project.color }}
-                    className="text-sm"
-                  >
-                    {project.icon || '#'}
-                  </span>
-                  <span className="flex-1 truncate">{project.name}</span>
-                </button>
-              ))}
+              {(() => {
+                const activeProjects = projects.filter(p => !p.isArchived);
+
+                // Separate top-level and child projects
+                const topLevelProjects = activeProjects.filter(p => !p.parentId);
+                const childProjects = activeProjects.filter(p => p.parentId);
+
+                // Helper function to render a project and its children
+                const renderProject = (project: any, level: number = 0) => {
+                  const children = childProjects.filter(child => child.parentId === project.id);
+
+                  return (
+                    <div key={project.id}>
+                      <button
+                        onClick={() => goToProject(project.id)}
+                        className={`w-full text-left px-3 py-2 text-sm hover:bg-minimal-hover dark:hover:bg-[#1A1A1A] transition-colors flex items-center gap-2 ${
+                          isViewActive(ViewType.PROJECT, project.id)
+                            ? 'bg-minimal-hover dark:bg-[#1A1A1A]'
+                            : 'text-minimal-text dark:text-[#FAFAFA]'
+                        }`}
+                        style={{
+                          paddingLeft: `${0.75 + (level * 0.75)}rem`,
+                          color: isViewActive(ViewType.PROJECT, project.id) ? themeColor : undefined
+                        }}
+                      >
+                        <span
+                          style={{ color: isViewActive(ViewType.PROJECT, project.id) ? themeColor : project.color }}
+                          className="text-sm"
+                        >
+                          #
+                        </span>
+                        <span className="flex-1 truncate">{project.name}</span>
+                      </button>
+                      {/* Render children recursively */}
+                      {children.map(child => renderProject(child, level + 1))}
+                    </div>
+                  );
+                };
+
+                // Render all top-level projects (and their children)
+                return topLevelProjects.map(project => renderProject(project, 0));
+              })()}
             </div>
           )}
 
@@ -338,10 +359,6 @@ export const Sidebar = ({ onNavigate }: SidebarProps = {}) => {
       <FilterModal
         isOpen={isFilterModalOpen}
         onClose={() => setIsFilterModalOpen(false)}
-      />
-      <EnhancedTaskForm
-        isOpen={isTaskFormOpen}
-        onClose={() => setIsTaskFormOpen(false)}
       />
       <SettingsModal
         isOpen={isSettingsOpen}

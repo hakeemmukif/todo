@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useTaskStore } from '../store/taskStore';
 import { DEFAULT_COLORS } from '../types/task';
 
@@ -57,7 +58,7 @@ export const LabelModal = ({ isOpen, onClose, labelId }: LabelModalProps) => {
 
   if (!isOpen) return null;
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 bg-black bg-opacity-30 dark:bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-minimal-bg dark:bg-[#1A1A1A] border border-minimal-border dark:border-[#2A2A2A] w-full max-w-md p-6">
         <h2 className="text-lg font-medium mb-6 text-minimal-text dark:text-[#FAFAFA]">
@@ -129,6 +130,7 @@ export const LabelModal = ({ isOpen, onClose, labelId }: LabelModalProps) => {
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };

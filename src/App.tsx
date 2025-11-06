@@ -82,35 +82,15 @@ function App() {
     const priorityOrder = { p1: 1, p2: 2, p3: 3, p4: 4 };
     return priorityOrder[a.priority] - priorityOrder[b.priority];
   });
-  const defaultProject = projects[0]; // First project
 
   const handleAddTask = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!taskTitle.trim()) return;
 
-    // Create a default project if user has none
-    let projectId = defaultProject?.id;
-    if (!projectId) {
-      try {
-        await useTaskStore.getState().addProject({
-          name: 'Tasks',
-          color: '#4A90E2',
-          isFavorite: false,
-          isArchived: false,
-          order: 0,
-        });
-        // Get the newly created project
-        const newProject = useTaskStore.getState().projects[0];
-        projectId = newProject.id;
-      } catch (error) {
-        console.error('Failed to create default project:', error);
-        return;
-      }
-    }
-
+    // Default to Inbox (no project)
     addTask({
       title: taskTitle.trim(),
-      projectId,
+      projectId: null, // Inbox
       status: TaskStatus.TODO,
       priority: Priority.P4,
     });
@@ -178,7 +158,10 @@ function App() {
         transform transition-transform duration-300 ease-in-out
         ${isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
       `}>
-        <Sidebar onNavigate={() => setIsMobileSidebarOpen(false)} />
+        <Sidebar
+          onNavigate={() => setIsMobileSidebarOpen(false)}
+          onOpenTaskForm={() => setIsTaskFormOpen(true)}
+        />
       </div>
 
       {/* Main Content */}

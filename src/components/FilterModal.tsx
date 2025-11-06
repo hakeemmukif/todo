@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useTaskStore } from '../store/taskStore';
 import { DEFAULT_COLORS, Priority } from '../types/task';
 
@@ -90,7 +91,7 @@ export const FilterModal = ({ isOpen, onClose, filterId }: FilterModalProps) => 
 
   if (!isOpen) return null;
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 bg-black bg-opacity-30 dark:bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-minimal-bg dark:bg-[#1A1A1A] border border-minimal-border dark:border-[#2A2A2A] w-full max-w-2xl p-6 max-h-[90vh] overflow-y-auto">
         <h2 className="text-lg font-medium mb-6 text-minimal-text dark:text-[#FAFAFA]">
@@ -274,6 +275,7 @@ export const FilterModal = ({ isOpen, onClose, filterId }: FilterModalProps) => 
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };

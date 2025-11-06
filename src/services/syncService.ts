@@ -127,8 +127,11 @@ export const syncService = {
       id: dbProject.id,
       name: dbProject.name,
       color: dbProject.color,
+      icon: dbProject.icon || undefined, // Deprecated but kept for backward compatibility
+      parentId: dbProject.parent_id || null,
+      viewStyle: (dbProject.view_style as 'list' | 'board' | 'calendar') || 'list',
       isFavorite: dbProject.is_favorite,
-      viewStyle: dbProject.view_style,
+      isArchived: dbProject.is_archived || false,
       order: dbProject.order,
       createdAt: dbProject.created_at,
     };

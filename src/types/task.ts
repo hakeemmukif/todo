@@ -6,7 +6,9 @@ export interface Project {
   id: string;
   name: string;
   color: string;
-  icon?: string;
+  icon?: string; // Optional, deprecated in UI but kept for backward compatibility
+  parentId?: string | null; // Parent project ID for hierarchy
+  viewStyle: 'list' | 'board' | 'calendar'; // Project view preference
   isFavorite: boolean;
   isArchived: boolean;
   order: number;
@@ -131,7 +133,7 @@ export interface Task {
   description?: string;
 
   // Organization
-  projectId: string;
+  projectId: string | null; // null = Inbox
   sectionId?: string;
   labelIds: string[];
 

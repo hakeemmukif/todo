@@ -169,10 +169,24 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
     const { userId } = get();
     if (!userId) throw new Error('Not authenticated');
 
+    // Validate parent project if provided
+    if (projectData.parentId) {
+      const parent = get().projects.find(p => p.id === projectData.parentId);
+      if (!parent) {
+        toast.error('Parent project not found');
+        throw new Error('Parent project not found');
+      }
+      if (parent.isArchived) {
+        toast.error('Cannot add to archived project');
+        throw new Error('Cannot add to archived project');
+      }
+    }
+
     const tempId = crypto.randomUUID();
     const optimisticProject: Project = {
       ...projectData,
       id: tempId,
+      viewStyle: projectData.viewStyle || 'list', // Default to list view
       createdAt: formatDate(new Date()),
       sections: [],
     };
@@ -181,7 +195,17 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
 
     try {
       const newProject = await retryOperation(() =>
-        projectService.createProject({ ...projectData, user_id: userId, order: get().projects.length })
+        projectService.createProject({
+          user_id: userId,
+          name: projectData.name,
+          color: projectData.color,
+          icon: projectData.icon || null,
+          parent_id: projectData.parentId || null,
+          view_style: projectData.viewStyle || 'list',
+          is_favorite: projectData.isFavorite,
+          is_archived: projectData.isArchived || false,
+          order: get().projects.length,
+        })
       );
       set((state) => ({
         projects: state.projects.map((p) =>
@@ -197,12 +221,36 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
   },
 
   updateProject: async (id, updates) => {
+    // Validate parent change if provided
+    if ('parentId' in updates) {
+      try {
+        await projectService.validateParentChange(id, updates.parentId || null);
+      } catch (error: any) {
+        toast.error(error.message || 'Invalid parent project');
+        throw error;
+      }
+    }
+
+    const backup = get().projects;
     set((state) => ({ projects: state.projects.map((p) => (p.id === id ? { ...p, ...updates } : p)) }));
+
     try {
-      await retryOperation(() => projectService.updateProject(id, updates));
+      const dbUpdates: any = {};
+      if ('name' in updates) dbUpdates.name = updates.name;
+      if ('color' in updates) dbUpdates.color = updates.color;
+      if ('icon' in updates) dbUpdates.icon = updates.icon || null;
+      if ('parentId' in updates) dbUpdates.parent_id = updates.parentId || null;
+      if ('viewStyle' in updates) dbUpdates.view_style = updates.viewStyle;
+      if ('isFavorite' in updates) dbUpdates.is_favorite = updates.isFavorite;
+      if ('isArchived' in updates) dbUpdates.is_archived = updates.isArchived;
+      if ('order' in updates) dbUpdates.order = updates.order;
+
+      await retryOperation(() => projectService.updateProject(id, dbUpdates));
+      toast.success('Project updated');
     } catch (error: any) {
+      set({ projects: backup });
       toast.error('Failed to update project');
-      await get().initializeStore();
+      throw error;
     }
   },
 
@@ -385,7 +433,7 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
       const newTask = await retryOperation(() =>
         taskService.createTask({
           user_id: userId,
-          project_id: taskData.projectId,
+          project_id: taskData.projectId || null, // Allow null for Inbox
           section_id: taskData.sectionId || null,
           title: taskData.title,
           description: taskData.description || null,
@@ -824,7 +872,7 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
     const { viewState, tasks, filters } = get();
     switch (viewState.type) {
       case ViewType.INBOX:
-        return tasks.filter((t) => !t.completed && !t.dueDate);
+        return tasks.filter((t) => !t.completed && t.projectId === null);
       case ViewType.TODAY:
         return get().getTasksForToday();
       case ViewType.UPCOMING:

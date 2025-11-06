@@ -2,8 +2,8 @@ import { Project } from '../../types/task';
 import { TaskFormField } from './TaskFormField';
 
 interface ProjectSelectorProps {
-  value: string;
-  onChange: (projectId: string) => void;
+  value: string | null;
+  onChange: (projectId: string | null) => void;
   projects: Project[];
   required?: boolean;
   showLabel?: boolean;
@@ -18,14 +18,11 @@ export const ProjectSelector = ({
 }: ProjectSelectorProps) => {
   const activeProjects = projects.filter(p => !p.isArchived);
 
-  // Check if there's an Inbox project, if not we'll add it as an option
-  const hasInbox = activeProjects.some(p => p.name.toLowerCase() === 'inbox');
-
   return (
     <TaskFormField label={showLabel ? "Project" : undefined} required={showLabel && required}>
       <select
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
+        value={value || ''}
+        onChange={(e) => onChange(e.target.value === '' ? null : e.target.value)}
         aria-label="Project"
         aria-required={required}
         title="Project"
@@ -40,7 +37,7 @@ export const ProjectSelector = ({
           paddingRight: '2.5rem'
         }}
       >
-        {!hasInbox && <option value="inbox">Inbox</option>}
+        <option value="">📥 Inbox</option>
         {activeProjects.map((project) => (
           <option key={project.id} value={project.id}>
             {project.icon} {project.name}
