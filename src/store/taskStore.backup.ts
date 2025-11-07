@@ -1063,6 +1063,7 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
         order: 0,
         isFavorite: false,
         isArchived: false,
+        viewStyle: 'list',
         createdAt: formatDate(new Date()),
         sections: [],
       };

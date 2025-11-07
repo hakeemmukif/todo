@@ -199,11 +199,8 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
           user_id: userId,
           name: projectData.name,
           color: projectData.color,
-          icon: projectData.icon || null,
-          parent_id: projectData.parentId || null,
-          view_style: projectData.viewStyle || 'list',
+          view_style: (projectData.viewStyle === 'calendar' ? 'list' : projectData.viewStyle) || 'list',
           is_favorite: projectData.isFavorite,
-          is_archived: projectData.isArchived || false,
           order: get().projects.length,
         })
       );

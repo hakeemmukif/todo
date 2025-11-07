@@ -16,7 +16,7 @@ export interface Database {
           name: string
           color: string
           is_favorite: boolean
-          view_style: 'list' | 'board'
+          view_style: 'list' | 'board' | 'calendar'
           order: number
           created_at: string
           updated_at: string
@@ -27,7 +27,7 @@ export interface Database {
           name: string
           color: string
           is_favorite?: boolean
-          view_style?: 'list' | 'board'
+          view_style?: 'list' | 'board' | 'calendar'
           order?: number
           created_at?: string
           updated_at?: string
@@ -38,7 +38,7 @@ export interface Database {
           name?: string
           color?: string
           is_favorite?: boolean
-          view_style?: 'list' | 'board'
+          view_style?: 'list' | 'board' | 'calendar'
           order?: number
           created_at?: string
           updated_at?: string
