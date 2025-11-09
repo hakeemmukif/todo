@@ -6,7 +6,6 @@ import { DescriptionInput } from './forms/DescriptionInput';
 import { DateInput } from './forms/DateInput';
 import { ProjectSelector } from './forms/ProjectSelector';
 import { PriorityDropdown } from './forms/PriorityDropdown';
-import { LabelSelector } from './forms/LabelSelector';
 import { ReminderManager } from './forms/ReminderManager';
 import { useDateInput } from '../hooks/useDateInput';
 import { useReminderInput } from '../hooks/useReminderInput';
@@ -19,7 +18,7 @@ interface EnhancedTaskFormProps {
 }
 
 export const EnhancedTaskForm = ({ isOpen, onClose, taskId }: EnhancedTaskFormProps) => {
-  const { tasks, projects, labels, addTask, updateTask } = useTaskStore();
+  const { tasks, projects, addTask, updateTask, viewState } = useTaskStore();
   const existingTask = taskId ? tasks.find((t) => t.id === taskId) : null;
 
   // Core fields (always visible)
@@ -33,7 +32,6 @@ export const EnhancedTaskForm = ({ isOpen, onClose, taskId }: EnhancedTaskFormPr
   const [showMoreOptions, setShowMoreOptions] = useState(false);
   const [description, setDescription] = useState('');
   const [priority, setPriority] = useState(Priority.P4);
-  const [selectedLabels, setSelectedLabels] = useState<string[]>([]);
   const reminderInput = useReminderInput();
 
   // Load existing task data when editing
@@ -43,7 +41,6 @@ export const EnhancedTaskForm = ({ isOpen, onClose, taskId }: EnhancedTaskFormPr
       setDescription(existingTask.description || '');
       setProjectId(existingTask.projectId);
       setPriority(existingTask.priority);
-      setSelectedLabels(existingTask.labelIds || []);
 
       if (existingTask.dueDate) {
         // Convert ISO date to human-readable format like "Today", "Tomorrow", "Friday"
@@ -52,21 +49,34 @@ export const EnhancedTaskForm = ({ isOpen, onClose, taskId }: EnhancedTaskFormPr
       }
 
       // Auto-expand "More options" if task has advanced fields set
-      if (
-        existingTask.description ||
-        (existingTask.labelIds && existingTask.labelIds.length > 0)
-      ) {
+      if (existingTask.description) {
         setShowMoreOptions(true);
       }
     } else {
       // Reset for new task
       setTitle('');
       setDescription('');
-      // Default to Inbox (null project)
-      setProjectId(null);
+
+      // Set project and date based on current view
+      if (viewState.type === 'project') {
+        // If viewing a project, default to that project
+        setProjectId(viewState.projectId || null);
+      } else {
+        // Otherwise default to Inbox
+        setProjectId(null);
+      }
+
+      // If viewing Today, set today's date
+      if (viewState.type === 'today') {
+        dateInput.setInput('Today');
+      } else if (viewState.type === 'upcoming') {
+        // If viewing Upcoming, set tomorrow's date
+        dateInput.setInput('Tomorrow');
+      } else {
+        dateInput.clearDate();
+      }
+
       setPriority(Priority.P4);
-      setSelectedLabels([]);
-      dateInput.clearDate();
       reminderInput.reset();
       setShowMoreOptions(false);
     }
@@ -101,7 +111,6 @@ export const EnhancedTaskForm = ({ isOpen, onClose, taskId }: EnhancedTaskFormPr
       projectId: projectId, // Can be null for Inbox
       status: TaskStatus.TODO,
       priority,
-      labelIds: selectedLabels,
       dueDate: dateInput.formattedDate,
     };
 
@@ -119,7 +128,6 @@ export const EnhancedTaskForm = ({ isOpen, onClose, taskId }: EnhancedTaskFormPr
   // Count active advanced options for badge (only collapsed options)
   const activeOptions = [
     description ? 'Description' : null,
-    selectedLabels.length > 0 ? `${selectedLabels.length} labels` : null,
     reminderInput.hasReminder ? 'Reminder' : null,
   ].filter(Boolean);
 
@@ -218,12 +226,6 @@ export const EnhancedTaskForm = ({ isOpen, onClose, taskId }: EnhancedTaskFormPr
                 value={reminderInput.preset}
                 onChange={reminderInput.setPreset}
                 dueDateSet={!!dateInput.parsedDate}
-              />
-
-              <LabelSelector
-                selectedLabels={selectedLabels}
-                onChange={setSelectedLabels}
-                labels={labels}
               />
             </div>
           )}

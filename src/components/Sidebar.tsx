@@ -2,11 +2,9 @@ import { useState, useEffect } from 'react';
 import { useTaskStore } from '../store/taskStore';
 import { ViewType } from '../types/task';
 import { ProjectModal } from './ProjectModal';
-import { LabelModal } from './LabelModal';
-import { FilterModal } from './FilterModal';
 import { SettingsModal } from './SettingsModal';
 import { useAuth } from '../contexts/AuthContext';
-import { Inbox, Calendar, CalendarDays, BarChart3, Check, Sun, Moon, Plus, Settings, LogOut } from 'lucide-react';
+import { Inbox, Calendar, CalendarDays, BarChart3, Check, Sun, Moon, Plus, Settings, LogOut, ChevronRight, ChevronDown, ChevronsDown, ChevronsRight } from 'lucide-react';
 
 interface SidebarProps {
   onNavigate?: () => void;
@@ -15,10 +13,9 @@ interface SidebarProps {
 
 export const Sidebar = ({ onNavigate, onOpenTaskForm }: SidebarProps = {}) => {
   const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
-  const [isLabelModalOpen, setIsLabelModalOpen] = useState(false);
-  const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [projectsSectionCollapsed, setProjectsSectionCollapsed] = useState(false);
 
   const { user, signOut } = useAuth();
 
@@ -77,6 +74,7 @@ export const Sidebar = ({ onNavigate, onOpenTaskForm }: SidebarProps = {}) => {
     }
     return true;
   };
+
 
   return (
     <div className="w-64 border-r border-minimal-border dark:border-[#2A2A2A] bg-minimal-bg dark:bg-[#0A0A0A] flex flex-col h-screen transition-colors duration-200">
@@ -199,11 +197,34 @@ export const Sidebar = ({ onNavigate, onOpenTaskForm }: SidebarProps = {}) => {
           </div>
 
           {/* Projects */}
-          {projects.filter(p => !p.isArchived).length > 0 && (
-            <div className="mb-4">
-              <div className="px-3 py-1 text-xs opacity-40 uppercase tracking-wider text-minimal-text dark:text-[#FAFAFA]">
-                Projects
+          <div className="mb-4">
+            <div className="px-3 py-1 text-xs uppercase tracking-wider text-minimal-text dark:text-[#FAFAFA] flex items-center justify-between group">
+              <div className="flex items-center gap-2 opacity-40">
+                <span>Projects</span>
+                <button
+                  onClick={() => setProjectsSectionCollapsed(!projectsSectionCollapsed)}
+                  className="hover:opacity-100 transition-all"
+                  title={projectsSectionCollapsed ? "Expand" : "Collapse"}
+                >
+                  <ChevronRight
+                    className="w-3 h-3 transition-transform duration-200"
+                    style={{
+                      transform: projectsSectionCollapsed ? 'rotate(0deg)' : 'rotate(90deg)'
+                    }}
+                  />
+                </button>
               </div>
+              <button
+                onClick={() => setIsProjectModalOpen(true)}
+                className="opacity-0 group-hover:opacity-60 hover:!opacity-100 transition-opacity p-1 rounded"
+                title="Add project"
+              >
+                <Plus className="w-3 h-3" />
+              </button>
+            </div>
+
+            {!projectsSectionCollapsed && projects.filter(p => !p.isArchived).length > 0 && (
+              <div>
               {(() => {
                 const activeProjects = projects.filter(p => !p.isArchived);
 
@@ -237,6 +258,7 @@ export const Sidebar = ({ onNavigate, onOpenTaskForm }: SidebarProps = {}) => {
                         </span>
                         <span className="flex-1 truncate">{project.name}</span>
                       </button>
+
                       {/* Render children recursively */}
                       {children.map(child => renderProject(child, level + 1))}
                     </div>
@@ -246,8 +268,9 @@ export const Sidebar = ({ onNavigate, onOpenTaskForm }: SidebarProps = {}) => {
                 // Render all top-level projects (and their children)
                 return topLevelProjects.map(project => renderProject(project, 0));
               })()}
-            </div>
-          )}
+              </div>
+            )}
+          </div>
 
           {/* Labels */}
           {labels.length > 0 && (
@@ -317,18 +340,6 @@ export const Sidebar = ({ onNavigate, onOpenTaskForm }: SidebarProps = {}) => {
         >
           [+ Add Project]
         </button>
-        <button
-          onClick={() => setIsLabelModalOpen(true)}
-          className="w-full text-left px-3 py-2 text-xs opacity-60 hover:opacity-100 transition-opacity text-minimal-text dark:text-[#FAFAFA]"
-        >
-          [+ Add Label]
-        </button>
-        <button
-          onClick={() => setIsFilterModalOpen(true)}
-          className="w-full text-left px-3 py-2 text-xs opacity-60 hover:opacity-100 transition-opacity text-minimal-text dark:text-[#FAFAFA]"
-        >
-          [+ Add Filter]
-        </button>
 
         {/* User Info and Logout */}
         {user && (
@@ -351,14 +362,6 @@ export const Sidebar = ({ onNavigate, onOpenTaskForm }: SidebarProps = {}) => {
       <ProjectModal
         isOpen={isProjectModalOpen}
         onClose={() => setIsProjectModalOpen(false)}
-      />
-      <LabelModal
-        isOpen={isLabelModalOpen}
-        onClose={() => setIsLabelModalOpen(false)}
-      />
-      <FilterModal
-        isOpen={isFilterModalOpen}
-        onClose={() => setIsFilterModalOpen(false)}
       />
       <SettingsModal
         isOpen={isSettingsOpen}

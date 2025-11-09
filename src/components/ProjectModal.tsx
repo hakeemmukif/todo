@@ -8,6 +8,7 @@ interface ProjectModalProps {
   isOpen: boolean;
   onClose: () => void;
   projectId?: string; // If provided, we're editing; otherwise, adding new
+  parentId?: string | null; // If provided when adding, pre-select this parent
 }
 
 // Color names mapping for dropdown display
@@ -26,7 +27,7 @@ const COLOR_NAMES: Record<string, string> = {
   '#999999': 'Gray',
 };
 
-export const ProjectModal = ({ isOpen, onClose, projectId }: ProjectModalProps) => {
+export const ProjectModal = ({ isOpen, onClose, projectId, parentId: initialParentId }: ProjectModalProps) => {
   const { projects, addProject, updateProject } = useTaskStore();
 
   const existingProject = projectId ? projects.find((p) => p.id === projectId) : null;
@@ -57,11 +58,11 @@ export const ProjectModal = ({ isOpen, onClose, projectId }: ProjectModalProps) 
       // Reset for new project
       setName('');
       setColor(DEFAULT_COLORS[0]);
-      setParentId(null);
+      setParentId(initialParentId || null); // Use initialParentId if provided
       setViewStyle('list');
       setIsFavorite(false);
     }
-  }, [existingProject, isOpen]);
+  }, [existingProject, isOpen, initialParentId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

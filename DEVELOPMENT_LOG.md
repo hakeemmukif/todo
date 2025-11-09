@@ -1,5 +1,87 @@
 # Development Log
 
+## 2025-11-08 23:52
+### [Feature] Added Projects section collapse and add button
+**Files Modified:**
+- src/components/Sidebar.tsx - Added collapse/expand chevron and hover add button to Projects header
+
+**Implementation Details:**
+- **Projects Section Collapse:**
+  - Added chevron button (ChevronRight) that rotates based on collapse state
+  - Rotates 0deg when collapsed, 90deg when expanded
+  - Smooth rotation animation with transition-transform duration-200
+  - Click chevron toggles collapse of entire projects section
+  - State managed with projectsSectionCollapsed useState
+  - Chevron positioned on RIGHT side of "PROJECTS" text
+
+- **Hover Add Button:**
+  - Plus (+) icon appears on far right side of "PROJECTS" header when hovering
+  - Opens ProjectModal to create new top-level project
+  - Opacity-0 default, opacity-60 on group-hover, opacity-100 on button hover
+  - Clean, subtle design matching Todoist style
+
+- **Header Layout:**
+  - Left side: "PROJECTS" text + rotating chevron (opacity-40)
+  - Right side: Plus button (visible on hover only)
+  - Group hover effect applied to entire header row
+
+**Related Context:**
+- User provided Todoist screenshots showing collapse chevron and hover add button
+- Chevron rotates smoothly when toggling collapse state
+- Matches Todoist interaction pattern
+
+**Status:** Completed
+
+---
+
+## 2025-11-08 22:30
+### [Feature] Dark mode state persists in localStorage
+**Files Modified:**
+- src/store/taskStore.ts - Added theme and theme color loading from localStorage in initializeStore
+
+**Implementation Details:**
+- Theme was already being saved to localStorage on toggle/change
+- Added loading of saved theme from localStorage when store initializes
+- Loads 'todoist_theme' and 'todoist_theme_color' from localStorage
+- Applies saved theme to document.documentElement (adds/removes 'dark' class)
+- Applies saved theme color as CSS variable
+- If no saved theme exists, defaults to 'light' theme (existing behavior)
+
+**Related Context:**
+- User requested dark mode state persistence across page refreshes
+- Theme now properly persists and restores on app reload
+
+**Status:** Completed
+
+---
+
+## 2025-11-08 22:33
+### [UI] Removed label and filter add buttons from sidebar
+**Files Modified:**
+- src/components/Sidebar.tsx - Removed "[+ Add Label]" and "[+ Add Filter]" buttons, cleaned up modal imports/state
+- src/components/EnhancedTaskForm.tsx - Removed LabelSelector import and all label-related state/logic
+- src/App.tsx - Added filter button to header next to view title
+
+**Implementation Details:**
+- Removed "[+ Add Label]" and "[+ Add Filter]" buttons from sidebar footer (kept only "[+ Add Project]")
+- Removed LabelModal and FilterModal imports and state (isLabelModalOpen, isFilterModalOpen) from Sidebar
+- Removed label selection functionality from task form completely
+- Cleaned up label state management (selectedLabels, labelIds) from EnhancedTaskForm
+- Removed LabelSelector component from "More options" section
+- Added filter button in App header with funnel icon
+- Filter button placed on right side of header, shows icon only on mobile, icon + "Filter" text on desktop
+- Button styled consistently with existing UI (border, hover states, dark mode support)
+
+**Related Context:**
+- Simplifying UI by removing label and filter creation buttons
+- Filter button in header prepared for future filtering functionality
+- Label and filter data still exist in store but no UI to manage them
+- Only "[+ Add Project]" button remains in sidebar footer
+
+**Status:** Completed
+
+---
+
 ## 2025-11-05 13:10
 ### [Fix] Date input field now shows human-readable format
 **Files Modified:**

@@ -139,6 +139,24 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
     console.log('[Store] Initializing for user:', user.id);
     set({ isLoading: true, userId: user.id });
 
+    // Load theme from localStorage
+    const savedTheme = localStorage.getItem('todoist_theme') as 'light' | 'dark' | null;
+    const savedThemeColor = localStorage.getItem('todoist_theme_color');
+
+    if (savedTheme) {
+      set({ theme: savedTheme });
+      if (savedTheme === 'dark') {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+    }
+
+    if (savedThemeColor) {
+      set({ themeColor: savedThemeColor });
+      document.documentElement.style.setProperty('--theme-color', savedThemeColor);
+    }
+
     try {
       const data = await retryOperation(() => syncService.syncAllData(user.id));
       console.log('[Store] Synced data:', {
